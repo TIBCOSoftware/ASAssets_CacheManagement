@@ -1,0 +1,466 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="Constants" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>Constants:
+    
+    Constants used in the incremental caching package.
+    
+
+    Input:
+        N/A
+
+
+    Output:
+        N/A
+
+
+    Exceptions:  
+        N/A
+    
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+    04/09/2014        Calvin Goodrich     6.2.6           Began update to support multiple data source types (adding MySQL and SQL Server support.)
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters></parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/resource" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/util/System" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    Constants:
+    
+    Constants used in the incremental caching package.
+    
+
+    Input:
+        N/A
+
+
+    Output:
+        N/A
+
+
+    Exceptions:  
+        N/A
+    
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+    04/09/2014        Calvin Goodrich     6.2.6           Began update to support multiple data source types (adding MySQL and SQL Server support.)
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE Constants()
+BEGIN
+    PATH /lib/resource;
+
+    /*
+     *  Types
+     */
+    DECLARE PUBLIC TYPE IncrConfRowType ROW(
+        ConfName  System.PropertyName,
+        ConfValue System.Text
+    );
+
+    DECLARE PUBLIC TYPE ColumnDefType ROW(
+        colName ResourceDefs.ResourceName,
+        colType ResourceDefs.ResourceType
+    );
+
+    DECLARE PUBLIC TYPE DefinitionRow ROW(
+        is_incremental VARCHAR(5),
+        has_partition VARCHAR(5),
+        partition_period_months INTEGER,
+        cached_view ResourceDefs.ResourcePath,
+        live_view ResourceDefs.ResourcePath,
+        union_view ResourceDefs.ResourcePath
+    );
+
+    /*
+     *  Exceptions
+     */
+    DECLARE PUBLIC IncrementalCacheConfigException EXCEPTION;
+    DECLARE PUBLIC RefreshFailureException EXCEPTION;
+    DECLARE PUBLIC DependencyFailureException EXCEPTION;
+
+    /*
+     *  Constants
+     */
+    DECLARE PUBLIC DATABASE_TYPE_ORACLE            CONSTANT INTEGER                             DEFAULT 1;
+    DECLARE PUBLIC DATABASE_TYPE_MYSQL             CONSTANT INTEGER                             DEFAULT 2;
+    DECLARE PUBLIC DATABASE_TYPE_MSSQL             CONSTANT INTEGER                             DEFAULT 3;
+    DECLARE PUBLIC DATABASE_TYPE_LABELS            CONSTANT VECTOR(VARCHAR)                     DEFAULT VECTOR [ -- these values come from /shared/ASAssets/Utilities/Repository/getDataSourceAttributes&apos; &quot;type&quot; attribute
+        &apos;Oracle&apos;,
+        &apos;MySql&apos;,
+        &apos;SqlServer&apos;
+    ];
+
+    DECLARE PUBLIC CACHE_DB_TYPE                   CONSTANT INTEGER                             DEFAULT DATABASE_TYPE_ORACLE;
+    DECLARE PUBLIC BASE_FOLDER                     CONSTANT ResourceDefs.ResourcePath           DEFAULT &apos;/shared/ASAssets/CacheManagement/IncrementalCache&apos;;
+    DECLARE PUBLIC COMMON_FOLDER                   CONSTANT ResourceDefs.ResourcePath           DEFAULT BASE_FOLDER || &apos;/Common&apos;;
+    DECLARE PUBLIC CONFIG_FOLDER                   CONSTANT ResourceDefs.ResourcePath           DEFAULT BASE_FOLDER || &apos;/Configuration&apos;;
+    DECLARE PUBLIC INCR_CACHE_PARENT_FOLDER        CONSTANT ResourceDefs.ResourcePath           DEFAULT BASE_FOLDER || &apos;/CacheScripts&apos;;
+    DECLARE PUBLIC PARTITIONS_PARENT_FOLDER        CONSTANT ResourceDefs.ResourcePath           DEFAULT BASE_FOLDER || &apos;/Partitions&apos;;
+    DECLARE PUBLIC STAGE_TABLE_SUFFIX              CONSTANT VARCHAR                             DEFAULT &apos;S&apos;; -- needs to be pretty short so that cache data table names don&apos;t get too long. (Oracle has a 30 char name limit on its table names.)
+    DECLARE PUBLIC IU_CACHE_KEY                    CONSTANT INTEGER                             DEFAULT 99999999;
+    DECLARE PUBLIC D_CACHE_KEY                     CONSTANT INTEGER                             DEFAULT 99999998;
+
+    -- debug levels. affects amount of information output to &lt;CIS_HOME&gt;/logs/cs_server.log when a refresh is run.
+    --
+    DECLARE PUBLIC DEBUG_LEVEL_ERROR               CONSTANT INTEGER                             DEFAULT 0;
+    DECLARE PUBLIC DEBUG_LEVEL_INFO                CONSTANT INTEGER                             DEFAULT 1;
+    DECLARE PUBLIC DEBUG_LEVEL_DEBUG               CONSTANT INTEGER                             DEFAULT 2;
+    DECLARE PUBLIC DEBUG_LEVEL                     CONSTANT INTEGER                             DEFAULT DEBUG_LEVEL_DEBUG;
+
+    -- Database type dependent paths
+    --
+    DECLARE PUBLIC DROP_TABLE_PATHS                CONSTANT VECTOR (ResourceDefs.ResourcePath)  DEFAULT VECTOR [
+        CONFIG_FOLDER || &apos;/support/Oracle_DropTable&apos;,
+        CONFIG_FOLDER || &apos;/support/MySQL_DropTable&apos;,
+        CONFIG_FOLDER || &apos;/support/MSSQL_DropTable&apos;
+    ];
+    DECLARE PUBLIC CREATE_TABLE_AS_PATHS           CONSTANT VECTOR (ResourceDefs.ResourcePath)  DEFAULT VECTOR [
+        CONFIG_FOLDER || &apos;/support/Oracle_CreateTableAs&apos;,
+        CONFIG_FOLDER || &apos;/support/MySQL_CreateTableAs&apos;,
+        CONFIG_FOLDER || &apos;/support/MSSQL_CreateTableAs&apos;
+    ];
+    DECLARE PUBLIC TRUNCATE_TABLE_PATHS            CONSTANT VECTOR (ResourceDefs.ResourcePath)  DEFAULT VECTOR [
+        &apos;pq_Oracle_TruncateTable&apos;,
+        &apos;pq_MySQL_TruncateTable&apos;,
+        &apos;pq_MSSQL_TruncateTable&apos;
+    ];
+    DECLARE PUBLIC APPLY_INCR_UPDATES_PATHS        CONSTANT VECTOR (ResourceDefs.ResourcePath)  DEFAULT VECTOR [
+        &apos;pq_Oracle_ApplyIncrUpdates&apos;,
+        &apos;pq_MySQL_ApplyIncrUpdates&apos;,
+        &apos;pq_MSSQL_ApplyIncrUpdates&apos;
+    ];
+
+    -- increment collection types
+    --
+    DECLARE PUBLIC INCR_TYPE_NONE                  CONSTANT INTEGER                             DEFAULT 1; -- used to create partitioned caching without incremental updates.
+    DECLARE PUBLIC INCR_TYPE_LAST_UPDATED          CONSTANT INTEGER                             DEFAULT 2;
+    DECLARE PUBLIC INCR_TYPE_DELTA                 CONSTANT INTEGER                             DEFAULT 3;
+
+    DECLARE PUBLIC APPLY_TYPE_UPDATE_IN_PLACE      CONSTANT INTEGER                             DEFAULT 1; -- update the cache data in-place.
+
+    -- not currently supported
+    --DECLARE PUBLIC APPLY_TYPE_COPY_AND_UPDATE      CONSTANT INTEGER                           DEFAULT 2; -- copy the existing cache data to a new cache key and modify the copy.
+
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1400009400462</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="public_constants" type="MAP">
+    <item>
+      <key type="STRING">DEBUG_LEVEL_DEBUG</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAACBAYAAAAAAAAAAv//</value>
+    </item>
+    <item>
+      <key type="STRING">TRUNCATE_TABLE_PATHS</key>
+      <value type="BYTE_ARRAY">ECMGAgAUAFQAUgBVAE4AQwBBAFQARQBfAFQAQQBCAEwARQBfAFAAQQBUAEgAUwMSAAAAAQQEAAAA
+AAAAAAAIGRAbBgIABABDAEgAQQBSAxIAAAACATsABAUAAAAAAAAAFgQEAAAAAAAAABcBEwH/////
+</value>
+    </item>
+    <item>
+      <key type="STRING">APPLY_INCR_UPDATES_PATHS</key>
+      <value type="BYTE_ARRAY">ECMGAgAYAEEAUABQAEwAWQBfAEkATgBDAFIAXwBVAFAARABBAFQARQBTAF8AUABBAFQASABTAxIA
+AAABBAQAAAAAAAAAAAgZEBsGAgAEAEMASABBAFIDEgAAAAIBOwAEBQAAAAAAAAAZBAQAAAAAAAAA
+GgETAf////8=</value>
+    </item>
+    <item>
+      <key type="STRING">APPLY_TYPE_UPDATE_IN_PLACE</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAABBAYAAAAAAAAAAf//</value>
+    </item>
+    <item>
+      <key type="STRING">CREATE_TABLE_AS_PATHS</key>
+      <value type="BYTE_ARRAY">ECMGAgAVAEMAUgBFAEEAVABFAF8AVABBAEIATABFAF8AQQBTAF8AUABBAFQASABTAxIAAAABBAQA
+AAAAAAAAAAgZEBsGAgAGAFMAdAByAGkAbgBnAxIAAAACATsABAUAAAAAAAAAHAQEAAAAAAAAEB0B
+EwH/////</value>
+    </item>
+    <item>
+      <key type="STRING">INCR_TYPE_LAST_UPDATED</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAACBAYAAAAAAAAAAv//</value>
+    </item>
+    <item>
+      <key type="STRING">CONFIG_FOLDER</key>
+      <value type="BYTE_ARRAY">EBsGAgAGAFMAdAByAGkAbgBnAxIAAAABATsABAUAAAAAAAAADgQEAAAAAAAAEA4BEwH//w==</value>
+    </item>
+    <item>
+      <key type="STRING">DATABASE_TYPE_MSSQL</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAADBAYAAAAAAAAAA///</value>
+    </item>
+    <item>
+      <key type="STRING">CACHE_DB_TYPE</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAABBAYAAAAAAAAAAf//</value>
+    </item>
+    <item>
+      <key type="STRING">PARTITIONS_PARENT_FOLDER</key>
+      <value type="BYTE_ARRAY">EBsGAgAGAFMAdAByAGkAbgBnAxIAAAABATsABAUAAAAAAAAACwQEAAAAAAAAEAsBEwH//w==</value>
+    </item>
+    <item>
+      <key type="STRING">DATABASE_TYPE_ORACLE</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAABBAYAAAAAAAAAAf//</value>
+    </item>
+    <item>
+      <key type="STRING">DROP_TABLE_PATHS</key>
+      <value type="BYTE_ARRAY">ECMGAgAQAEQAUgBPAFAAXwBUAEEAQgBMAEUAXwBQAEEAVABIAFMDEgAAAAEEBAAAAAAAAAAACBkQ
+GwYCAAYAUwB0AHIAaQBuAGcDEgAAAAIBOwAEBQAAAAAAAAAYBAQAAAAAAAAQGQETAf////8=</value>
+    </item>
+    <item>
+      <key type="STRING">BASE_FOLDER</key>
+      <value type="BYTE_ARRAY">EBsGAgAEAEMASABBAFIDEgAAAAEBOwAEBQAAAAAAAAAxBAQAAAAAAAAAMQETAf//</value>
+    </item>
+    <item>
+      <key type="STRING">DEBUG_LEVEL_INFO</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAABBAYAAAAAAAAAAf//</value>
+    </item>
+    <item>
+      <key type="STRING">DEBUG_LEVEL_ERROR</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAAABAYAAAAAAAAAAP//</value>
+    </item>
+    <item>
+      <key type="STRING">IU_CACHE_KEY</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAF9eD/BAYAAAAABfXg////</value>
+    </item>
+    <item>
+      <key type="STRING">INCR_TYPE_DELTA</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAADBAYAAAAAAAAAA///</value>
+    </item>
+    <item>
+      <key type="STRING">STAGE_TABLE_SUFFIX</key>
+      <value type="BYTE_ARRAY">EBsGAgAEAEMASABBAFIDEgAAAAEBOwAEBQAAAAAAAAABBAQAAAAAAAAAAQETAf//</value>
+    </item>
+    <item>
+      <key type="STRING">DATABASE_TYPE_LABELS</key>
+      <value type="BYTE_ARRAY">ECMGAgAUAEQAQQBUAEEAQgBBAFMARQBfAFQAWQBQAEUAXwBMAEEAQgBFAEwAUwMSAAAAAQQEAAAA
+AAAAAAAIGRAbBgIABABDAEgAQQBSAxIAAAACATsABAUAAAAAAAAABQQEAAAAAAAAAAkBEwH/////
+</value>
+    </item>
+    <item>
+      <key type="STRING">INCR_CACHE_PARENT_FOLDER</key>
+      <value type="BYTE_ARRAY">EBsGAgAGAFMAdAByAGkAbgBnAxIAAAABATsABAUAAAAAAAAADQQEAAAAAAAAEA0BEwH//w==</value>
+    </item>
+    <item>
+      <key type="STRING">INCR_TYPE_NONE</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAABBAYAAAAAAAAAAf//</value>
+    </item>
+    <item>
+      <key type="STRING">DEBUG_LEVEL</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAACBAYAAAAAAAAAAv//</value>
+    </item>
+    <item>
+      <key type="STRING">D_CACHE_KEY</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAF9eD+BAYAAAAABfXg/v//</value>
+    </item>
+    <item>
+      <key type="STRING">DATABASE_TYPE_MYSQL</key>
+      <value type="BYTE_ARRAY">EBkGAgAHAEkATgBUAEUARwBFAFIDEgAAAAEEBwAAAAAAAAACBAYAAAAAAAAAAv//</value>
+    </item>
+    <item>
+      <key type="STRING">COMMON_FOLDER</key>
+      <value type="BYTE_ARRAY">EBsGAgAGAFMAdAByAGkAbgBnAxIAAAABATsABAUAAAAAAAAABwQEAAAAAAAAEAcBEwH//w==</value>
+    </item>
+  </attribute>
+  <attribute name="public_exceptions" type="STRING_ARRAY">
+    <item>DependencyFailureException</item>
+    <item>IncrementalCacheConfigException</item>
+    <item>RefreshFailureException</item>
+  </attribute>
+  <attribute name="public_types" type="MAP">
+    <item>
+      <key type="STRING">IncrConfRowType</key>
+      <value type="BYTE_ARRAY">EB8GAgAPAEkAbgBjAHIAQwBvAG4AZgBSAG8AdwBUAHkAcABlBikASQAvAHMAaABhAHIAZQBkAC8A
+QQBTAEEAcwBzAGUAdABzAC8AQwBhAGMAaABlAE0AYQBuAGEAZwBlAG0AZQBuAHQALwBJAG4AYwBy
+AGUAbQBlAG4AdABhAGwAQwBhAGMAaABlAC8AQwBvAG4AZgBpAGcAdQByAGEAdABpAG8AbgAvAEMA
+bwBuAHMAdABhAG4AdABzBioADwBJAG4AYwByAEMAbwBuAGYAUgBvAHcAVAB5AHAAZQMSAAAAAQMS
+AAAAAQETAQkUAAAAAhAhBhUACABDAG8AbgBmAE4AYQBtAGUDLwAAAAEDFgAAAAADGgAAAAEDGwAA
+AAEDIP////8DIgAAAAAIGRAbBgIADABQAHIAbwBwAGUAcgB0AHkATgBhAG0AZQYpABAALwBsAGkA
+YgAvAHUAdABpAGwALwBTAHkAcwB0AGUAbQYqAAwAUAByAG8AcABlAHIAdAB5AE4AYQBtAGUDEgAA
+AAIEBAAAAAAAAAD/ARMB/////xAhBhUACQBDAG8AbgBmAFYAYQBsAHUAZQMvAAAAAQMWAAAAAAMa
+AAAAAQMbAAAAAQMg/////wMiAAAAAAgZEBsGAgAEAFQAZQB4AHQGKQAQAC8AbABpAGIALwB1AHQA
+aQBsAC8AUwB5AHMAdABlAG0GKgAEAFQAZQB4AHQDEgAAAAMEBAAAAAB/////ARMB////////</value>
+    </item>
+    <item>
+      <key type="STRING">DefinitionRow</key>
+      <value type="BYTE_ARRAY">EB8GAgANAEQAZQBmAGkAbgBpAHQAaQBvAG4AUgBvAHcGKQBJAC8AcwBoAGEAcgBlAGQALwBBAFMA
+QQBzAHMAZQB0AHMALwBDAGEAYwBoAGUATQBhAG4AYQBnAGUAbQBlAG4AdAAvAEkAbgBjAHIAZQBt
+AGUAbgB0AGEAbABDAGEAYwBoAGUALwBDAG8AbgBmAGkAZwB1AHIAYQB0AGkAbwBuAC8AQwBvAG4A
+cwB0AGEAbgB0AHMGKgANAEQAZQBmAGkAbgBpAHQAaQBvAG4AUgBvAHcDEgAAAAEDEgAAAAEBEwEJ
+FAAAAAYQIQYVAA4AaQBzAF8AaQBuAGMAcgBlAG0AZQBuAHQAYQBsAy8AAAABAxYAAAAAAxoAAAAB
+AxsAAAABAyD/////AyIAAAAACBkQGwYCAAcAVgBBAFIAQwBIAEEAUgMSAAAAAgQEAAAAAAAAAAUB
+EwH/////ECEGFQANAGgAYQBzAF8AcABhAHIAdABpAHQAaQBvAG4DLwAAAAEDFgAAAAADGgAAAAED
+GwAAAAEDIP////8DIgAAAAADEgAAAAL//xAhBhUAFwBwAGEAcgB0AGkAdABpAG8AbgBfAHAAZQBy
+AGkAbwBkAF8AbQBvAG4AdABoAHMDLwAAAAEDFgAAAAADGgAAAAEDGwAAAAEDIP////8DIgAAAAAI
+GRAZBgIABwBJAE4AVABFAEcARQBSAxIAAAADBAf/////gAAAAAQGAAAAAH//////////ECEGFQAL
+AGMAYQBjAGgAZQBkAF8AdgBpAGUAdwMvAAAAAQMWAAAAAAMaAAAAAQMbAAAAAQMg/////wMiAAAA
+AAgZEBsGAgAMAFIAZQBzAG8AdQByAGMAZQBQAGEAdABoBikAGgAvAGwAaQBiAC8AcgBlAHMAbwB1
+AHIAYwBlAC8AUgBlAHMAbwB1AHIAYwBlAEQAZQBmAHMGKgAMAFIAZQBzAG8AdQByAGMAZQBQAGEA
+dABoAxIAAAAEBAQAAAAAAAAQAAETAf////8QIQYVAAkAbABpAHYAZQBfAHYAaQBlAHcDLwAAAAED
+FgAAAAADGgAAAAEDGwAAAAEDIP////8DIgAAAAADEgAAAAT//xAhBhUACgB1AG4AaQBvAG4AXwB2
+AGkAZQB3Ay8AAAABAxYAAAAAAxoAAAABAxsAAAABAyD/////AyIAAAAAAxIAAAAE/////w==</value>
+    </item>
+    <item>
+      <key type="STRING">ColumnDefType</key>
+      <value type="BYTE_ARRAY">EB8GAgANAEMAbwBsAHUAbQBuAEQAZQBmAFQAeQBwAGUGKQBJAC8AcwBoAGEAcgBlAGQALwBBAFMA
+QQBzAHMAZQB0AHMALwBDAGEAYwBoAGUATQBhAG4AYQBnAGUAbQBlAG4AdAAvAEkAbgBjAHIAZQBt
+AGUAbgB0AGEAbABDAGEAYwBoAGUALwBDAG8AbgBmAGkAZwB1AHIAYQB0AGkAbwBuAC8AQwBvAG4A
+cwB0AGEAbgB0AHMGKgANAEMAbwBsAHUAbQBuAEQAZQBmAFQAeQBwAGUDEgAAAAEDEgAAAAEBEwEJ
+FAAAAAIQIQYVAAcAYwBvAGwATgBhAG0AZQMvAAAAAQMWAAAAAAMaAAAAAQMbAAAAAQMg/////wMi
+AAAAAAgZEBsGAgAMAFIAZQBzAG8AdQByAGMAZQBOAGEAbQBlBikAGgAvAGwAaQBiAC8AcgBlAHMA
+bwB1AHIAYwBlAC8AUgBlAHMAbwB1AHIAYwBlAEQAZQBmAHMGKgAMAFIAZQBzAG8AdQByAGMAZQBO
+AGEAbQBlAxIAAAACBAQAAAAAAAAA/wETAf////8QIQYVAAcAYwBvAGwAVAB5AHAAZQMvAAAAAQMW
+AAAAAAMaAAAAAQMbAAAAAQMg/////wMiAAAAAAgZEBsGAgAMAFIAZQBzAG8AdQByAGMAZQBUAHkA
+cABlBikAGgAvAGwAaQBiAC8AcgBlAHMAbwB1AHIAYwBlAC8AUgBlAHMAbwB1AHIAYwBlAEQAZQBm
+AHMGKgAMAFIAZQBzAG8AdQByAGMAZQBUAHkAcABlAxIAAAADBAQAAAAAAAAAKAETAf///////w==</value>
+    </item>
+  </attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">61/72</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/48</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/40</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/49</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/47</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/34</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/35</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">69/95</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">69/90</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/39</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">69/105</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">69/100</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">61/73</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">61/74</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">61/75</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">61/76</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

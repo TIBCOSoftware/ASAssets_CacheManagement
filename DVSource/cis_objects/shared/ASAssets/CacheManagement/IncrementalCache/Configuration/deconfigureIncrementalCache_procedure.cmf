@@ -1,0 +1,1153 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="deconfigureIncrementalCache" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/deconfigureIncrementalCache" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>deconfigureIncrementalCacheConfig:
+    
+    Undoes the operations of &quot;createNewIncrementalCacheConfig()&quot;.
+    Doesn&apos;t make any judgements about how inResourcePath was configured.
+    (Well except for missing the original SQL code in partitioned situations.)
+    
+    Input:
+    
+        inResourcePath - Full path to the view that is cached. 
+            Values: Any valid path to a cached resource.
+        
+    
+    Output:
+    
+        resultCode: Code indicating the status of the call 
+            Values: 0 indicates success, any other integer indicates a failure of some kind (see resultMessage.)
+
+        resultMessage: Message indicating the status of the call
+            Values: Success or failure message.
+    
+    Exceptions:  
+        /lib/util/System.IllegalStateException - Thrown if partitioning was configured and the original view
+                                                 SQL code is missing.
+
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="inResourcePath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="resultCode" direction="OUT" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="resultMessage" direction="OUT" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="65536"/>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/debug/Print" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="textToPrint" direction="IN">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="MessageValue" type="STRING" maxLength="64000"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/resource" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceExists" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="path" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="type" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="version" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceVersion" type="STRING" maxLength="255"/>
+      </element>
+      <element name="exists" direction="OUT">
+        <datatype type="BOOLEAN"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/util/System" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/DropTable" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inCatalogName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSchemaName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inDSType" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inDSPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/applyReservedListToPath" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="debug" direction="IN">
+        <datatype type="STRING" minLength="1" maxLength="1"/>
+      </element>
+      <element name="fixedResourcePath" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/destroyResource" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceName" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getBasicResourceCursor_SQL_TABLE" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="resourceCursor" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="resourceName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="resourcePath">
+            <datatype type="STRING" maxLength="1024"/>
+          </element>
+          <element name="resourceType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="subtype">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="enabled">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="annotation">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="explicitlyDesigned">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="tableType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="sqlText">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="proprietaryModel">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="columnName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="columnType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeBaseType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getDataSourceAttributes" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="dataSourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="attrName">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="attrValue">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inType" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="configured">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="enabled">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="storageMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageDataSourcePath">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageTargetName">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storagePath">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageType">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="refreshMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="scheduleMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="startTime">
+            <datatype type="DATETIME"/>
+          </element>
+          <element name="fromTimeInADay">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="endTimeInADay">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="recurringDay">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="interval">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="period">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="count">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="isCluster">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="expirationPeriod">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="clearRule">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="allOrNothing">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="incremental">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="storageBucketMode">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketCatalog">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketSchema">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketPrefix">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketNumBuckets">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="storageDropCreateIdx">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="firstRefreshCallback">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="secondRefreshCallback">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateResourceCacheConfiguration" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inResourceType" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inConfigured" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inEnabled" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inStorageMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageDataSourcePath" direction="IN">
+        <datatype type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inStorageTargets" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="StorageTargetType" type="TREE" refId="2">
+              <element name="stName">
+                <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="stPath">
+                <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+              </element>
+              <element name="stType">
+                <datatype name="ResourceType" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="inRefreshMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inScheduleMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStartTime" direction="IN">
+        <datatype type="DATETIME"/>
+      </element>
+      <element name="inPeriod" direction="IN">
+        <datatype type="STRING" maxLength="10"/>
+      </element>
+      <element name="inCount" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inExpirationPeriod" direction="IN">
+        <datatype type="INTEGER"/>
+      </element>
+      <element name="inClearRule" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inIncremental" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inStorageBucketMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketCatalog" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketSchema" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketPrefix" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketNumBuckets" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inStorageDropCreateIdx" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inFirstRefreshCallback" direction="IN">
+        <datatype type="STRING" maxLength="32768"/>
+      </element>
+      <element name="inSecondRefreshCallback" direction="IN">
+        <datatype type="STRING" maxLength="32768"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="updateResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="3"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="3"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateSqlTable" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="inScripttext" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateSqlTableTextAndModel" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="inSQL" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="inModel" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="updateResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/basename" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/dirname" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/applyReservedListToPath" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/basename" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/dirname" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    deconfigureIncrementalCacheConfig:
+    
+    Undoes the operations of &quot;createNewIncrementalCacheConfig()&quot;.
+    Doesn&apos;t make any judgements about how inResourcePath was configured.
+    (Well except for missing the original SQL code in partitioned situations.)
+    
+    Input:
+    
+        inResourcePath - Full path to the view that is cached. 
+            Values: Any valid path to a cached resource.
+        
+    
+    Output:
+    
+        resultCode: Code indicating the status of the call 
+            Values: 0 indicates success, any other integer indicates a failure of some kind (see resultMessage.)
+
+        resultMessage: Message indicating the status of the call
+            Values: Success or failure message.
+    
+    Exceptions:  
+        /lib/util/System.IllegalStateException - Thrown if partitioning was configured and the original view
+                                                 SQL code is missing.
+
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE deconfigureIncrementalCache(
+    IN inResourcePath ResourceDefs.ResourcePath,
+    OUT resultCode INTEGER,
+    OUT resultMessage VARCHAR(65536)
+)
+BEGIN
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration;
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support;
+    PATH /lib/resource;
+
+    -- Constants
+    --
+    DECLARE PROC_NAME CONSTANT VARCHAR DEFAULT &apos;deconfigureIncrementalCacheConfig&apos;;
+    DECLARE CLEAN_VIEW_PATH CONSTANT ResourceDefs.ResourcePath DEFAULT REPLACE(inResourcePath, &apos;&quot;&apos;, &apos;&apos;);
+    DECLARE ESCAPED_VIEW_PATH CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE VIEW_NAME CONSTANT ResourceDefs.ResourceName DEFAULT basename (CLEAN_VIEW_PATH);
+    DECLARE INCR_CACHE_FOLDER CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(Constants.INCR_CACHE_PARENT_FOLDER || CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE PARTITION_FOLDER CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(Constants.PARTITIONS_PARENT_FOLDER || CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE NL CONSTANT CHAR(1) DEFAULT &apos;
+&apos;;
+
+    -- local variables
+    --
+    DECLARE dsTypeCurs CURSOR (ds_type INTEGER);
+    DECLARE cacheConfigCursor CURSOR /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor.CacheConfigRowType;
+    DECLARE origCacheConfig /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor.CacheConfigRowType;
+    DECLARE resourceExists BOOLEAN;
+    DECLARE cacheDsType VARCHAR(32768);
+    DECLARE cacheDsTypeNum INTEGER DEFAULT -1;
+    DECLARE origSQL LONGVARCHAR;
+    DECLARE origModel LONGVARCHAR;
+    DECLARE responseSuccess, callStatus BIT;
+    DECLARE responseXML XML;
+    DECLARE faultXML XML;
+
+    -- see if partitions folder exists
+    --
+    CALL ResourceExists(
+        PARTITION_FOLDER,
+        ResourceDefs.RESOURCE_TYPE_CONTAINER,
+        NULL,
+        resourceExists
+    ); 
+    IF (resourceExists) THEN
+
+        CALL PRINT(PROC_NAME || &apos;: found partitions folder &quot;&apos; || PARTITION_FOLDER || &apos;&quot;.&apos;);
+
+        CALL ResourceExists(
+            PARTITION_FOLDER || &apos;/&apos; || VIEW_NAME || &apos;_orig&apos;,
+            ResourceDefs.RESOURCE_TYPE_TABLE,
+            NULL,
+            resourceExists
+        );
+
+        -- this is kinda important. if the original view code is missing this is Really Bad(TM).
+        --
+        IF (NOT resourceExists) THEN
+            RAISE System.IllegalStateException VALUE &apos;Unable to locate view, &quot;&apos; || PARTITION_FOLDER || &apos;/&apos; || VIEW_NAME || &apos;_orig&quot;, containing &apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;s original SQL text. Exiting.&apos;;
+        END IF;
+
+        -- extract code from &quot;orig&quot; view
+        --
+        CALL PRINT(PROC_NAME || &apos;: extracting original SQL code from &quot;&apos; || PARTITION_FOLDER || &apos;/&apos; || VIEW_NAME || &apos;_orig&quot;.&apos;);
+        SELECT 
+            sqlText,
+            proprietaryModel
+        INTO
+            origSQL,
+            origModel
+        FROM
+            /shared/ASAssets/Utilities/repository/getBasicResourceCursor_SQL_TABLE(
+                PARTITION_FOLDER || &apos;/&apos; || VIEW_NAME || &apos;_orig&apos;,
+                ResourceDefs.RESOURCE_TYPE_TABLE
+            ) 
+        WHERE
+            columnName IS NULL;
+
+        -- update inResourcePath code with original SQL and model
+        --
+        CALL PRINT(PROC_NAME || &apos;: putting original model code back into &quot;&apos; || inResourcePath || &apos;&quot;.&apos;);
+        IF (origModel IS NOT NULL) THEN
+            -- the model can&apos;t be null with this procedure
+            --
+            CALL /shared/ASAssets/Utilities/repository/updateSqlTableTextAndModel(
+                ESCAPED_VIEW_PATH,
+                origSQL,
+                origModel,
+                responseSuccess,
+                responseXML,
+                faultXML
+            );
+        ELSE
+            CALL /shared/ASAssets/Utilities/repository/updateSqlTable(
+                ESCAPED_VIEW_PATH,
+                origSQL,
+                responseSuccess,
+                responseXML,
+                faultXML
+            );
+        END IF;
+
+        -- delete partitions folder (and contents)
+        --
+        CALL PRINT(PROC_NAME || &apos;: deleting partition folder &quot;&apos; || PARTITION_FOLDER || &apos;&quot;.&apos;);
+
+        CALL /shared/ASAssets/Utilities/repository/destroyResource(
+            dirname(PARTITION_FOLDER),
+            VIEW_NAME,
+            ResourceDefs.RESOURCE_TYPE_CONTAINER,
+            responseSuccess,
+            responseXML,
+            faultXML
+        ); 
+    END IF;
+
+    -- see if incremental_cache folder exists and delete it (and contents.)
+    --
+    CALL ResourceExists(
+        INCR_CACHE_FOLDER,
+        ResourceDefs.RESOURCE_TYPE_CONTAINER,
+        NULL,
+        resourceExists
+    ); 
+    IF (resourceExists) THEN
+
+        CALL PRINT(PROC_NAME || &apos;: found incremental_cache folder &quot;&apos; || INCR_CACHE_FOLDER || &apos;&quot;. deleting.&apos;);
+
+        CALL /shared/ASAssets/Utilities/repository/destroyResource(
+            dirname(INCR_CACHE_FOLDER),
+            VIEW_NAME,
+            ResourceDefs.RESOURCE_TYPE_CONTAINER,
+            responseSuccess,
+            responseXML,
+            faultXML
+        ); 
+    END IF;
+
+    -- get cache config
+    --
+    OPEN cacheConfigCursor FOR
+        SELECT
+           *
+        FROM 
+            /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor(
+                ESCAPED_VIEW_PATH, 
+                ResourceDefs.RESOURCE_TYPE_TABLE
+            );
+    FETCH cacheConfigCursor INTO origCacheConfig;
+    CLOSE cacheConfigCursor;
+ 
+    IF (origCacheConfig.configured = 0) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;View , &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, no longer has caching defined. Unable to locate incremental cache staging table for removal.&apos;;
+    END IF;
+
+    -- get the type of the cache DB
+    --
+    SELECT
+        attrValue
+    INTO
+        cacheDsType
+    FROM
+        /shared/ASAssets/Utilities/repository/getDataSourceAttributes(origCacheConfig.storageDataSourcePath)
+    WHERE
+        attrName = &apos;type&apos;;
+
+    BEGIN
+        DECLARE tmp VARCHAR;
+        DECLARE i INTEGER DEFAULT 1;
+        WHILE (i &lt;= CARDINALITY(Constants.DATABASE_TYPE_LABELS)) DO
+            SET tmp = Constants.DATABASE_TYPE_LABELS[i]; -- putting this in the IF statement below causes IllegalArgumentException on save
+    		IF (tmp = cacheDsType) THEN
+    			SET cacheDsTypeNum = i;
+            END IF;
+            SET i = i + 1;
+        END WHILE;
+    END;
+
+    -- remove incremental cache data staging table
+    --
+    CALL PRINT(PROC_NAME || &apos;: Dropping &apos; || basename(dirname(origCacheConfig.storagePath)) || &apos;.&apos; || basename(origCacheConfig.storagePath) || Constants.STAGE_TABLE_SUFFIX || &apos; from &apos; || origCacheConfig.storageDataSourcePath || &apos;.&apos;);
+
+    BEGIN INDEPENDENT TRANSACTION
+		DECLARE catalogName ResourceDefs.ResourceName DEFAULT NULL;
+		DECLARE schemaName ResourceDefs.ResourceName DEFAULT NULL;
+
+        CASE cacheDsTypeNum
+            WHEN Constants.DATABASE_TYPE_ORACLE THEN
+                SET schemaName = basename(dirname(origCacheConfig.storagePath));
+
+            WHEN Constants.DATABASE_TYPE_MSSQL THEN
+                SET catalogName = basename(dirname(dirname(origCacheConfig.storagePath)));
+                SET schemaName = basename(dirname(origCacheConfig.storagePath));
+
+        END CASE;
+
+        CALL DropTable (
+            catalogName,
+            schemaName,
+            basename(origCacheConfig.storagePath) || Constants.STAGE_TABLE_SUFFIX,
+            cacheDsTypeNum,
+            origCacheConfig.storageDataSourcePath,
+            responseSuccess
+        );
+    END;
+
+    -- resetting cache configuration settings.
+    --
+    CALL /shared/ASAssets/Utilities/repository/updateResourceCacheConfiguration(
+        ESCAPED_VIEW_PATH,
+        ResourceDefs.RESOURCE_TYPE_TABLE,
+        1, 
+        origCacheConfig.enabled, 
+        &apos;DATA_SOURCE&apos;, 
+        origCacheConfig.storageDataSourcePath, 
+        VECTOR [(
+            origCacheConfig.storageTargetName, 
+            origCacheConfig.storagePath, 
+            origCacheConfig.storageType
+        )], 
+        origCacheConfig.refreshMode,
+        origCacheConfig.scheduleMode,
+        origCacheConfig.startTime,
+        origCacheConfig.period,
+        origCacheConfig.&quot;count&quot;,
+        origCacheConfig.expirationPeriod,
+        origCacheConfig.clearRule,
+        0,    -- incremental
+        NULL, -- storage bucket mode (not supported with incremental caching)
+        NULL, -- storage bucket catalog (not supported with incremental caching)
+        NULL, -- storage bucket schema (not supported with incremental caching)
+        NULL, -- storage bucket prefix (not supported with incremental caching)
+        NULL, -- storage bucket number of buckets (not supported with incremental caching)
+        origCacheConfig.storageDropCreateIdx, 
+        &apos;&apos;,   -- first refresh callback (if we set this to NULL the fullCacheRefresh procedure won&apos;t get removed.)
+        &apos;&apos;,   -- second refresh callback (if we set this to NULL the fullCacheRefresh procedure won&apos;t get removed.)
+        callStatus,
+        responseXML,
+        faultXML
+    );
+
+    CALL PRINT(PROC_NAME || &apos;: incremental cache deconfiguration successful.&apos;);
+    SET resultCode = 0;
+    SET resultMessage = &apos;incremental caching on view &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos; successfully deconfigured.&apos;;
+
+EXCEPTION
+    ELSE
+        CALL PRINT(PROC_NAME || &apos;: Error while deconfiguring incremental cache: &apos; || CURRENT_EXCEPTION.NAME || &apos;: &apos; || CURRENT_EXCEPTION.MESSAGE);
+        CALL PRINT(&apos;Trace: &apos; || NL || CURRENT_EXCEPTION.TRACE);
+        SET resultCode = -1;
+        SET resultMessage = CURRENT_EXCEPTION.MESSAGE;
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1400002811287</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">23/202</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">32/48</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">54/231</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/72</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/95</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/228</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>DropTable</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/78</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/141</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/273</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/178</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">33/201</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/163</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/152</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/150</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">39/50</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">97/50</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/212</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/158</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/242</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/112</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/80</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/279</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">38/46</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/105</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/136</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">144/212</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">40/47</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">98/49</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/82</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/215</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/90</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/34</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/184</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/219</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/222</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">22/216</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/70</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">40/49</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/280</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

@@ -1,0 +1,243 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="updateCollectIncrementDelta" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/updateCollectIncrementDelta" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>updateCollectIncrementDelta:
+
+    This procedure takes p_CollectIncrement code and makes substitutions pertinent to the
+    INCR_TYPE_DELTA method of increment collection.
+
+
+    Inputs:
+        collectConfList - A VECTOR containing the incremental caching config for &quot;delta&quot; type of changed data detection.
+
+
+    Outputs:
+        procText - A VARCHAR containing the updated procedure text.
+
+
+    Exceptions:
+        N/A
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="collectConfList" direction="IN" nullable="true">
+      <datatype name="collectConfList" type="ARRAY" maxLength="0">
+        <itemDatatype>
+          <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="1">
+            <element name="ConfName">
+              <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+            </element>
+            <element name="ConfValue">
+              <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+            </element>
+          </datatype>
+        </itemDatatype>
+      </datatype>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+    <parameter name="procText" direction="INOUT" nullable="true">
+      <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/resource" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/util/System" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/TextUtils/RegexFind" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="Input Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Regular Expression" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Occurrence" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/TextUtils/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="Input Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Regular Expression" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Replacement Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Occurrence" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/RegexFind" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    updateCollectIncrementDelta:
+
+    This procedure takes p_CollectIncrement code and makes substitutions pertinent to the
+    INCR_TYPE_DELTA method of increment collection.
+
+
+    Inputs:
+        collectConfList - A VECTOR containing the incremental caching config for &quot;delta&quot; type of changed data detection.
+
+
+    Outputs:
+        procText - A VARCHAR containing the updated procedure text.
+
+
+    Exceptions:
+        N/A
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE updateCollectIncrementDelta(
+    IN collectConfList VECTOR(/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants.IncrConfRowType),
+    INOUT procText System.Text
+)
+proc:
+BEGIN
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration; 
+    PATH /lib/resource;
+
+    DECLARE PROC_NAME CONSTANT VARCHAR DEFAULT &apos;updateCollectIncrementDelta&apos;;
+    DECLARE NL CONSTANT CHAR(1) DEFAULT &apos;
+&apos;;
+
+    DECLARE collectConfRow Constants.IncrConfRowType;
+    DECLARE i INTEGER;
+    DECLARE deltaTablePath ResourceDefs.ResourcePath DEFAULT NULL;
+    DECLARE deltaOperationSpec Constants.ColumnDefType;
+    DECLARE deltaInsertOperation, deltaUpdateOperation, deltaDeleteOperation VARCHAR DEFAULT NULL;
+    DECLARE columnListSub System.Text;
+
+    -- parse the collection configuration input
+    --
+    SET i = 0;
+    WHILE (collectConfList IS NOT NULL AND i &lt; CARDINALITY(collectConfList)) DO
+        SET i = i + 1;
+        SET collectConfRow = collectConfList[i];
+
+        CASE collectConfRow.ConfName
+            WHEN &apos;DeltaTablePath&apos; THEN
+                SET deltaTablePath = collectConfRow.ConfValue;
+
+            WHEN &apos;DeltaOperationSpec&apos; THEN -- single &quot;column=type&quot; pair
+                SET deltaOperationSpec = (RegexFind(collectConfRow.ConfValue, &apos;[^=]+&apos;, 1), RegexFind(collectConfRow.ConfValue, &apos;[^=]+&apos;, 2));
+
+            WHEN &apos;DeltaInsertOperation&apos; THEN
+                SET deltaInsertOperation = collectConfRow.ConfValue;
+
+            WHEN &apos;DeltaUpdateOperation&apos; THEN
+                SET deltaUpdateOperation = collectConfRow.ConfValue;
+
+            WHEN &apos;DeltaDeleteOperation&apos; THEN
+                SET deltaDeleteOperation = collectConfRow.ConfValue;
+
+        END CASE;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DELTA_VIEW_PATH&gt;&apos;, COALESCE(deltaTablePath, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DELTA_OPERATION_COLUMN&gt;&apos;, COALESCE(deltaOperationSpec.colName, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DELTA_INSERT_OPERATION&gt;&apos;, COALESCE(deltaInsertOperation, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DELTA_UPDATE_OPERATION&gt;&apos;, COALESCE(deltaUpdateOperation, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DELTA_DELETE_OPERATION&gt;&apos;, COALESCE(deltaDeleteOperation, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1399939982388</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="p:0:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="p:1:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">20/27</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/38</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">27/43</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">32/41</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/40</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

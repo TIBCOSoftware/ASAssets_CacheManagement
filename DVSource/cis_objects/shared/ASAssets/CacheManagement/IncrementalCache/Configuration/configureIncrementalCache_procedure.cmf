@@ -1,0 +1,4487 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="configureIncrementalCache" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/configureIncrementalCache" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>createNewIncrementalCacheConfig:
+    
+    Creates incremental cache configuration based on the cache configuration of an input view path.
+    
+    Prerequisites:
+
+      - The view to be cached MUST have caching configured (with a cache database and cache data table configured.)
+
+      - &quot;Primary keys&quot; for the view to be cached and any other associated resources (i.e. a deleted rows table) need 
+        to appear in the configuration in the same order (even if they aren&apos;t in the same order in their respective 
+        views/tables.)
+
+
+    Input:
+    
+      inResourcePath - Full path to the view to be cached. Will use the path as the folder structure of the 
+                       for incremental cache resources under &quot;/shared/ASAssets/CacheManagement/IncrementalCache/CacheScripts&quot; 
+                       folder and the folder structure for any partitioning resources under
+                       &quot;/shared/ASAssets/CacheManagement/IncrementalCache/Partitions&quot;. For example, setting 
+                       up incremental caching for &quot;/shared/examples/CompositeView&quot; means that incremental cache 
+                       resources will be created in 
+                       &quot;/shared/ASAssets/CacheManagement/IncrementalCache/CacheScripts/shared/examples/CompositeView&quot;.  
+          Values: Any valid path to a cached resource.
+        
+      inPkColCSV - list of inResourcePath&apos;s &quot;primary keys&quot; in CSV format(even if they aren&apos;t defined as such 
+                   in the view itself, this needs to be the list of column(s) that uniquely identify each row.)  
+          Values: A comma separated list of column names. Note: Column names must be in the EXACT case.
+        
+      inLastUpdatedColCSV - The list of columns of inResourcePath used to indicate when a row was last updated (used 
+                            for incremental updating.) If this list has multiple columns, the tool will use the largest
+                            value of all the columns (using the GREATEST function.)
+          Values: A comma separated list of column names. Note: Column names must be in the EXACT case.
+        
+      inCacheTableCacheKeyCol - The cache key column of the cache data table (where the inResourcePath&apos;s cache 
+                                data will be stored.)
+          Values: Any valid column name. This will usually be &quot;cachekey&quot;.
+        
+      inPartitionPeriodMonths - period in months to cache in a caching partition. (Used for partitioning, 
+                                set to NULL if partitioning is not required.)  
+          Values: Any positive integer. NULL if partitioning is not required.
+        
+      inActivityDateCol - Column of inResourcePath used to indicate when the row&apos;s activity occurred. 
+                          (Used for partitioning, set to NULL if partitioning is not required.)
+          Values: Any valid column name. NULL if partitioning is not required.
+
+      incrType - The type of incremental update to be configured.
+          Values: An integer indicating the update type (see Constants for values.)
+
+      incrConfList - The configuration settings specific to the type of incremental update.
+          Values: A VECTOR of key/value pairs (row type definition can be found at Constants.IncrConfRowType)
+
+      applyType - The method to use for updating the cache data.
+          Values: An integer indicating the apply type (see 
+                  /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants for values.)
+
+
+    Output:
+    
+      resultCode: Code indicating the status of the call 
+        Values: 0 indicates success, any other integer indicates a failure of some kind (see resultMessage.)
+
+      resultMessage: Message indicating the status of the call
+        Values: &quot;Configuration successful.&quot; or a message stating why the call failed.
+
+
+    Exceptions:  
+        /lib/util/System.IllegalArgumentException - Thrown if an argument is passed that doesn&apos;t make sense.
+
+        /lib/util/System.IllegalStateException - Thrown if there are errors with the system configuration (missing folders,
+                                                 improperly configured caching databases, etc.)
+
+        Constants.IncrementalCacheConfigException - Thrown when this script is unable to perform its configuration operations. The configuration
+                                                    of the incremental caching of inResourcePath will probably be in an inconsistent state.
+    
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+    04/09/2014        Calvin Goodrich     6.2.6           Began update to support multiple data source types (adding MySQL and SQL Server support.)
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="inResourcePath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="inPkColCSV" direction="IN" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="inLastUpdatedColCSV" direction="IN" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="4096"/>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+    <parameter name="inCacheTableCacheKeyCol" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="inPartitionPeriodMonths" direction="IN" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="inActivityDateCol" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="incrType" direction="IN" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="incrConfList" direction="IN" nullable="true">
+      <datatype name="incrConfList" type="ARRAY" maxLength="0">
+        <itemDatatype>
+          <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="1">
+            <element name="ConfName">
+              <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+            </element>
+            <element name="ConfValue">
+              <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+            </element>
+          </datatype>
+        </itemDatatype>
+      </datatype>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+    <parameter name="applyType" direction="IN" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+    <parameter name="resultCode" direction="OUT" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="resultMessage" direction="OUT" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="65536"/>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/debug/Print" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="textToPrint" direction="IN">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="MessageValue" type="STRING" maxLength="64000"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/resource" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/CopyResource" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="path" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="type" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="targetContainerPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="newName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="copyMode" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="CopyMode" type="STRING" maxLength="255"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceExists" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="path" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="type" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="version" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceVersion" type="STRING" maxLength="255"/>
+      </element>
+      <element name="exists" direction="OUT">
+        <datatype type="BOOLEAN"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/util/GetProperty" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="property" direction="IN">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="PropertyValue" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/util/System" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Common/monthStartTimestampNMonthsAgo" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inMonthsAgo" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="DATETIME"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/CreateTableAs" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inCatalogName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSchemaName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSrcTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inDSType" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inDSPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/ProcedureTemplates" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/checkInputsDelta" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="incrConfList" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="2">
+              <element name="ConfName">
+                <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="ConfValue">
+                <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="collectConfList" direction="OUT">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <reference refId="2"/>
+          </itemDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/checkInputsLastUpdated" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="incrConfList" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="2">
+              <element name="ConfName">
+                <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="ConfValue">
+                <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="collectConfList" direction="OUT">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <reference refId="2"/>
+          </itemDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/serializeColumnDefList" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="colDefList" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="ColumnDefType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="ColumnDefType" type="TREE" refId="2">
+              <element name="colName">
+                <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="colType">
+                <datatype name="ResourceType" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/updateCollectIncrementDelta" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="collectConfList" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="2">
+              <element name="ConfName">
+                <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="ConfValue">
+                <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="procText" direction="INOUT">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/updateCollectIncrementLastUpdated" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="collectConfList" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="IncrConfRowType" referenceDefinitionSet="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" referenceType="IncrConfRowType" type="TREE" refId="2">
+              <element name="ConfName">
+                <datatype name="PropertyName" referenceDefinitionSet="/lib/util/System" referenceType="PropertyName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="ConfValue">
+                <datatype name="Text" referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="procText" direction="INOUT">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="Text" type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/getUtilitiesVersion" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="version" direction="OUT">
+        <datatype type="FLOAT"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/applyReservedListToPath" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="debug" direction="IN">
+        <datatype type="STRING" minLength="1" maxLength="1"/>
+      </element>
+      <element name="fixedResourcePath" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/createAllFolders" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="sourceFolderPath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/createResource" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceName" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="resourceSubType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getBasicResourceCursor_SQL_TABLE" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="resourceCursor" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="resourceName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="resourcePath">
+            <datatype type="STRING" maxLength="1024"/>
+          </element>
+          <element name="resourceType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="subtype">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="enabled">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="annotation">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="explicitlyDesigned">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="tableType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="sqlText">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="proprietaryModel">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="columnName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="columnType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeBaseType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getChildResourcesCursor" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="childResCursor" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="resourceName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="resourcePath">
+            <datatype type="STRING" maxLength="1024"/>
+          </element>
+          <element name="resourceType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="subtype">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="enabled">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="annotation">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+          <element name="isNullable">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="columnName">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="columnType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeBaseType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="nativeType">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getCisVersion" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="result" direction="OUT">
+        <datatype type="STRING" maxLength="15"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getDataSourceAttributes" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="dataSourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="attrName">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="attrValue">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getDataSourceCacheConfig" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inDataSourcePath" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="StatusTablePath" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="TrackingTablePath" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inType" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="configured">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="enabled">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="storageMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageDataSourcePath">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageTargetName">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storagePath">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="storageType">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="refreshMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="scheduleMode">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="startTime">
+            <datatype type="DATETIME"/>
+          </element>
+          <element name="fromTimeInADay">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="endTimeInADay">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="recurringDay">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="interval">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="period">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="count">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="isCluster">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="expirationPeriod">
+            <datatype type="INTEGER"/>
+          </element>
+          <element name="clearRule">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="allOrNothing">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="incremental">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="storageBucketMode">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketCatalog">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketSchema">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketPrefix">
+            <datatype type="STRING" maxLength="255"/>
+          </element>
+          <element name="storageBucketNumBuckets">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="storageDropCreateIdx">
+            <datatype type="INTEGER" minValue="0" maxValue="1"/>
+          </element>
+          <element name="firstRefreshCallback">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="secondRefreshCallback">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getResourceImpactedCursor" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inResourceType" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="impactLevel">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+          <element name="impactMessage">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateResourceCacheConfiguration" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inResourceType" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inConfigured" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inEnabled" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inStorageMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageDataSourcePath" direction="IN">
+        <datatype type="STRING" maxLength="4096"/>
+      </element>
+      <element name="inStorageTargets" direction="IN">
+        <datatype type="ARRAY" maxLength="0">
+          <itemDatatype>
+            <datatype name="StorageTargetType" type="TREE" refId="2">
+              <element name="stName">
+                <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+              </element>
+              <element name="stPath">
+                <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+              </element>
+              <element name="stType">
+                <datatype name="ResourceType" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceType" type="STRING" maxLength="40"/>
+              </element>
+            </datatype>
+          </itemDatatype>
+        </datatype>
+      </element>
+      <element name="inRefreshMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inScheduleMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStartTime" direction="IN">
+        <datatype type="DATETIME"/>
+      </element>
+      <element name="inPeriod" direction="IN">
+        <datatype type="STRING" maxLength="10"/>
+      </element>
+      <element name="inCount" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inExpirationPeriod" direction="IN">
+        <datatype type="INTEGER"/>
+      </element>
+      <element name="inClearRule" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inIncremental" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inStorageBucketMode" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketCatalog" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketSchema" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketPrefix" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inStorageBucketNumBuckets" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="inStorageDropCreateIdx" direction="IN">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="inFirstRefreshCallback" direction="IN">
+        <datatype type="STRING" maxLength="32768"/>
+      </element>
+      <element name="inSecondRefreshCallback" direction="IN">
+        <datatype type="STRING" maxLength="32768"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="updateResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="3"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="3"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateResourceCacheEnabled" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="cacheConfigured" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateSqlScript" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="scripttext" direction="INOUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateSqlTable" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="inScripttext" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/ParseCSVLine" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="csvLine" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="separator" direction="IN">
+        <datatype type="STRING" maxLength="1"/>
+      </element>
+      <element name="qualifier" direction="IN">
+        <datatype type="STRING" maxLength="1"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="CSValue">
+            <datatype type="STRING" maxLength="32768"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/TextUtils/RegexGetGroups" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="Input Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Regular Expression" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Occurrence" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="TABLE" refId="2">
+          <element name="groupNumber">
+            <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+          </element>
+          <element name="matchedGroup">
+            <datatype type="STRING" maxLength="2147483647"/>
+          </element>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/TextUtils/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="Input Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Regular Expression" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Replacement Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Occurrence" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/basename" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/dirname" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/applyReservedListToPath" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/basename" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/dirname" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/getCisVersion" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/getUtilitiesVersion" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/monthStartTimestampNMonthsAgo" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    createNewIncrementalCacheConfig:
+    
+    Creates incremental cache configuration based on the cache configuration of an input view path.
+    
+    Prerequisites:
+
+      - The view to be cached MUST have caching configured (with a cache database and cache data table configured.)
+
+      - &quot;Primary keys&quot; for the view to be cached and any other associated resources (i.e. a deleted rows table) need 
+        to appear in the configuration in the same order (even if they aren&apos;t in the same order in their respective 
+        views/tables.)
+
+
+    Input:
+    
+      inResourcePath - Full path to the view to be cached. Will use the path as the folder structure of the 
+                       for incremental cache resources under &quot;/shared/ASAssets/CacheManagement/IncrementalCache/CacheScripts&quot; 
+                       folder and the folder structure for any partitioning resources under
+                       &quot;/shared/ASAssets/CacheManagement/IncrementalCache/Partitions&quot;. For example, setting 
+                       up incremental caching for &quot;/shared/examples/CompositeView&quot; means that incremental cache 
+                       resources will be created in 
+                       &quot;/shared/ASAssets/CacheManagement/IncrementalCache/CacheScripts/shared/examples/CompositeView&quot;.  
+          Values: Any valid path to a cached resource.
+        
+      inPkColCSV - list of inResourcePath&apos;s &quot;primary keys&quot; in CSV format(even if they aren&apos;t defined as such 
+                   in the view itself, this needs to be the list of column(s) that uniquely identify each row.)  
+          Values: A comma separated list of column names. Note: Column names must be in the EXACT case.
+        
+      inLastUpdatedColCSV - The list of columns of inResourcePath used to indicate when a row was last updated (used 
+                            for incremental updating.) If this list has multiple columns, the tool will use the largest
+                            value of all the columns (using the GREATEST function.)
+          Values: A comma separated list of column names. Note: Column names must be in the EXACT case.
+        
+      inCacheTableCacheKeyCol - The cache key column of the cache data table (where the inResourcePath&apos;s cache 
+                                data will be stored.)
+          Values: Any valid column name. This will usually be &quot;cachekey&quot;.
+        
+      inPartitionPeriodMonths - period in months to cache in a caching partition. (Used for partitioning, 
+                                set to NULL if partitioning is not required.)  
+          Values: Any positive integer. NULL if partitioning is not required.
+        
+      inActivityDateCol - Column of inResourcePath used to indicate when the row&apos;s activity occurred. 
+                          (Used for partitioning, set to NULL if partitioning is not required.)
+          Values: Any valid column name. NULL if partitioning is not required.
+
+      incrType - The type of incremental update to be configured.
+          Values: An integer indicating the update type (see Constants for values.)
+
+      incrConfList - The configuration settings specific to the type of incremental update.
+          Values: A VECTOR of key/value pairs (row type definition can be found at Constants.IncrConfRowType)
+
+      applyType - The method to use for updating the cache data.
+          Values: An integer indicating the apply type (see 
+                  /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants for values.)
+
+
+    Output:
+    
+      resultCode: Code indicating the status of the call 
+        Values: 0 indicates success, any other integer indicates a failure of some kind (see resultMessage.)
+
+      resultMessage: Message indicating the status of the call
+        Values: &quot;Configuration successful.&quot; or a message stating why the call failed.
+
+
+    Exceptions:  
+        /lib/util/System.IllegalArgumentException - Thrown if an argument is passed that doesn&apos;t make sense.
+
+        /lib/util/System.IllegalStateException - Thrown if there are errors with the system configuration (missing folders,
+                                                 improperly configured caching databases, etc.)
+
+        Constants.IncrementalCacheConfigException - Thrown when this script is unable to perform its configuration operations. The configuration
+                                                    of the incremental caching of inResourcePath will probably be in an inconsistent state.
+    
+    
+    Modified Date:    Modified By:        CSW Version:    Reason:
+    09/15/2010        Calvin Goodrich     5.2.0           Created new
+    03/05/2013        Calvin Goodrich     6.2.1           Updated to take advantage of new incremental caching framework in 6.2.1
+    04/09/2014        Calvin Goodrich     6.2.6           Began update to support multiple data source types (adding MySQL and SQL Server support.)
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE configureIncrementalCache(
+    IN inResourcePath ResourceDefs.ResourcePath,
+    IN inPkColCSV VARCHAR(4096),
+    IN inLastUpdatedColCSV VARCHAR(4096),
+    IN inCacheTableCacheKeyCol ResourceDefs.ResourceName,
+    IN inPartitionPeriodMonths INTEGER,
+    IN inActivityDateCol ResourceDefs.ResourceName,
+    IN incrType INTEGER,
+    IN incrConfList VECTOR(Constants.IncrConfRowType),
+    IN applyType INTEGER,
+    OUT resultCode INTEGER,
+    OUT resultMessage VARCHAR(65536)
+)
+proc:
+BEGIN
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration;
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support;
+    PATH /lib/resource;
+
+    -- Local Constants
+    --
+    DECLARE PROC_NAME CONSTANT VARCHAR DEFAULT &apos;configureIncrementalCache()&apos;;
+    DECLARE CLEAN_VIEW_PATH CONSTANT ResourceDefs.ResourcePath DEFAULT REPLACE(inResourcePath, &apos;&quot;&apos;, &apos;&apos;);
+    DECLARE ESCAPED_VIEW_PATH CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE VIEW_NAME CONSTANT ResourceDefs.ResourceName DEFAULT basename (CLEAN_VIEW_PATH);
+    DECLARE INCR_CACHE_FOLDER CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(Constants.INCR_CACHE_PARENT_FOLDER || CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE PARTITION_FOLDER CONSTANT ResourceDefs.ResourcePath DEFAULT applyReservedListToPath(Constants.PARTITIONS_PARENT_FOLDER || CLEAN_VIEW_PATH, &apos;N&apos;);
+    DECLARE NL CONSTANT CHAR(1) DEFAULT &apos;
+&apos;;
+
+    -- Local Variables
+    --
+    DECLARE currentUser VARCHAR;
+    DECLARE currentDomain VARCHAR;
+    DECLARE pkColList VECTOR(ResourceDefs.ResourceName) DEFAULT VECTOR[];
+    DECLARE luColList VECTOR(ResourceDefs.ResourceName) DEFAULT VECTOR[];
+    DECLARE incrConfRow Constants.IncrConfRowType;
+    DECLARE origViewPath ResourceDefs.ResourcePath;
+    DECLARE unionViewPath ResourceDefs.ResourcePath;
+    DECLARE cachedViewPath ResourceDefs.ResourcePath;
+    DECLARE liveViewPath ResourceDefs.ResourcePath;
+    DECLARE configurePartitioning BOOLEAN DEFAULT FALSE;
+    DECLARE partDate DATE;
+    DECLARE partCommentOpen VARCHAR DEFAULT &apos;/* The view being incrementally cached does not use partitioning.&apos;;
+    DECLARE partCommentClose VARCHAR(2) DEFAULT &apos;*/&apos;;
+    DECLARE partSLComment VARCHAR(2) DEFAULT &apos;--&apos;;
+    DECLARE collectConfList VECTOR(Constants.IncrConfRowType);
+    DECLARE parentFolderType, origViewSubType ResourceDefs.ResourceType;
+    DECLARE incrCacheParentExists BOOLEAN;
+    DECLARE partitionParentExists BOOLEAN;
+    DECLARE incrCacheFolderExists BOOLEAN;
+    DECLARE partitionFolderExists BOOLEAN;
+    DECLARE origViewExists BOOLEAN;
+    DECLARE columnList, cacheColumnList, pkList, luList VECTOR(Constants.ColumnDefType) DEFAULT VECTOR[];
+    DECLARE luCSV VARCHAR(32768) DEFAULT &apos;&apos;;
+    DECLARE callStatus BIT;
+    DECLARE callResponse, callFault XML;
+    DECLARE viewText, procText, columnListSub, serializedColDefs System.Text;
+    DECLARE i,j INTEGER;
+    DECLARE pkFound BOOLEAN;
+    DECLARE activityDateSpec Constants.ColumnDefType;
+    DECLARE colName ResourceDefs.ResourceName;
+    DECLARE cacheConfigCursor CURSOR /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor.CacheConfigRowType;
+    DECLARE cacheDsType VARCHAR(32768);
+    DECLARE cacheDsTypeNum INTEGER DEFAULT -1;
+    DECLARE origCacheConfig /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor.CacheConfigRowType;
+    DECLARE myImpactLevel, myImpactMessage VARCHAR(32768);
+    DECLARE cacheStatusPath ResourceDefs.ResourcePath;
+    DECLARE cacheTrackingPath ResourceDefs.ResourcePath;
+    DECLARE myIncrConfList VECTOR(Constants.IncrConfRowType) DEFAULT incrConfList;
+    DECLARE cacheTablePath, cacheStageTablePath ResourceDefs.ResourcePath;
+
+    CALL GetProperty(System.CURRENT_USER_NAME, currentUser); 
+    CALL GetProperty(System.CURRENT_USER_DOMAIN, currentDomain);
+
+    -- set vars based on whether partitioning is needed or not
+    --
+    IF (inPartitionPeriodMonths IS NOT NULL) THEN -- partitioning required
+        SET configurePartitioning = TRUE;
+        SET origViewPath = PARTITION_FOLDER || &apos;/&quot;&apos; || VIEW_NAME || &apos;_orig&quot;&apos;; -- original view in VIEW_PATH gets copied to this location
+        SET unionViewPath = ESCAPED_VIEW_PATH;
+        SET cachedViewPath = PARTITION_FOLDER || &apos;/&quot;&apos; || VIEW_NAME || &apos;_cached&quot;&apos;;
+        SET liveViewPath = PARTITION_FOLDER || &apos;/&quot;&apos; || VIEW_NAME || &apos;_live&quot;&apos;;
+        SET partDate = CAST(monthStartTimestampNMonthsAgo(inPartitionPeriodMonths) AS DATE);
+        SET partCommentOpen = &apos;&apos;;
+        SET partCommentClose = &apos;&apos;;
+        SET partSLComment = &apos;&apos;;
+    ELSE -- no partitioning required
+        SET unionViewPath = &apos;NULL&apos;;
+        SET origViewPath = ESCAPED_VIEW_PATH;
+        SET cachedViewPath = ESCAPED_VIEW_PATH;
+        SET liveViewPath = ESCAPED_VIEW_PATH; -- need to use DISABLE_DATA_CACHE select option with this to get live data
+    END IF;
+
+/*
+** Initial sanity checks to make sure the proper configuration settings exist to even get started.
+*/
+
+    CALL PRINT(PROC_NAME || &apos;: performing initial checks&apos;);
+
+    CALL PRINT(PROC_NAME || &apos;: checking version of /shared/PSAssets/Utilities&apos;);
+    IF (getUtilitiesVersion() &lt; 2013.1) THEN
+        RAISE Constants.IncrementalCacheConfigException VALUE &apos;The incremental caching framework requires PS Development Utilities version 2013Q1 or higher.&apos;; 
+    END IF;
+
+    CALL PRINT(PROC_NAME || &apos;: checking version of CIS&apos;);
+    BEGIN
+        DECLARE major, minor, sp INTEGER;
+
+        myLoop: 
+        FOR r AS
+            SELECT * FROM /shared/ASAssets/Utilities/string/TextUtils/RegexGetGroups(getCisVersion(), &apos;^(\d+)\.(\d+)\.(\d+)&apos;, 1)
+        DO
+            CASE r.groupNumber
+                WHEN 1 THEN SET major = r.matchedGroup;
+                WHEN 2 THEN SET minor = r.matchedGroup;
+                WHEN 3 THEN SET sp = r.matchedGroup;
+            END CASE;
+        END FOR;
+
+        IF (major &lt; 6 OR
+            major = 6 AND minor &lt; 2 OR
+            major = 6 AND minor = 2 AND sp &lt; 1)
+        THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;The incremental caching framework is only available in CIS version 6.2 SP1 or higher.&apos;; 
+        END IF;
+    END;
+
+    CALL PRINT(PROC_NAME || &apos;: making sure VIEW_PATH is not null&apos;);
+    IF (inResourcePath IS NULL OR inResourcePath = &apos;&apos;) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;The value of inResourcePath may not be NULL or the empty string.&apos;;
+    END IF;
+
+    -- Exit with error if view to be incrementally cached does not exist.
+    --
+    CALL PRINT(PROC_NAME || &apos;: making sure view at &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos; exists&apos;);
+    CALL ResourceExists(
+        ESCAPED_VIEW_PATH, 
+        ResourceDefs.RESOURCE_TYPE_TABLE, 
+        NULL,
+        origViewExists
+    );
+    IF (NOT origViewExists) THEN
+        RAISE System.IllegalStateException VALUE &apos;View to be incrementally cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, does not exist. Exiting.&apos;;
+    END IF;
+
+    -- Exit with error if incremental container folder does not exist.
+    --
+    CALL PRINT(PROC_NAME || &apos;: making sure INCR_CACHE_PARENT_FOLDER exists&apos;);
+    CALL ResourceExists(
+        Constants.INCR_CACHE_PARENT_FOLDER, 
+        ResourceDefs.RESOURCE_TYPE_CONTAINER, 
+        NULL,
+        incrCacheParentExists
+    );
+    IF (NOT origViewExists) THEN
+        RAISE System.IllegalStateException VALUE &apos;Incremental caching container folder, &quot;&apos; || Constants.INCR_CACHE_PARENT_FOLDER || &apos;&quot;, does not exist. Exiting.&apos;;
+    END IF;
+  
+    -- Exit with error if incremental_cache subfolder already exists.
+    --
+    CALL PRINT(PROC_NAME || &apos;: making sure INCR_CACHE_FOLDER doesn&apos;&apos;t exist&apos;);
+    CALL ResourceExists(
+        INCR_CACHE_FOLDER, 
+        ResourceDefs.RESOURCE_TYPE_CONTAINER, 
+        NULL,
+        incrCacheFolderExists
+    );
+    IF (incrCacheFolderExists) THEN
+        RAISE System.IllegalStateException VALUE &apos;Incremental caching container folder, &quot;&apos; || INCR_CACHE_FOLDER || &apos;&quot;, already exists. Exiting.&apos;;
+    END IF;
+
+    -- if partitioning is configured ...
+    --
+    IF (configurePartitioning) THEN
+        -- make sure inResourcePath&apos;s subtype is actually a view whose SQL can be updated.
+        --
+        CALL PRINT(PROC_NAME || &apos;: making sure input resource is a CIS view (SQL code must be updatable to be used with partitioning.)&apos;);
+
+        -- First make sure the resource&apos;s parent is a container and not a database, catalog, or schema (couldn&apos;t be a view otherwise.)
+        --
+        FOR r AS
+            SELECT
+                resourceType
+            FROM
+                /shared/ASAssets/Utilities/repository/getChildResourcesCursor(
+                    dirname(dirname(ESCAPED_VIEW_PATH)), -- the resource&apos;s container&apos;s parent
+                    ResourceDefs.RESOURCE_TYPE_CONTAINER
+                )
+            WHERE
+                    resourcePath = dirname(ESCAPED_VIEW_PATH)
+                AND columnName IS NULL
+        DO
+            SET parentFolderType = r.resourceType;
+        END FOR;
+
+        IF (parentFolderType &lt;&gt; ResourceDefs.RESOURCE_TYPE_CONTAINER) THEN
+            RAISE System.IllegalArgumentException VALUE &apos;Resource at &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos; must be a CIS view to be partitioned. Exiting.&apos;;
+        END IF;
+
+        FOR r AS
+            SELECT  -- this would have barfed with mysql physical tables because the parent is a data source instead of a container
+                subtype
+            FROM
+                /shared/ASAssets/Utilities/repository/getChildResourcesCursor(
+                    dirname(ESCAPED_VIEW_PATH),
+                    ResourceDefs.RESOURCE_TYPE_CONTAINER
+                )
+            WHERE
+                    resourcePath = CLEAN_VIEW_PATH
+                AND resourceType = ResourceDefs.RESOURCE_TYPE_TABLE
+                AND columnName IS NULL
+        DO
+            SET origViewSubType = r.subtype;
+        END FOR;
+
+        IF (origViewSubType IS NULL OR origViewSubType &lt;&gt; ResourceDefs.RESOURCE_SUBTYPE_SQL_TABLE) THEN
+            RAISE System.IllegalArgumentException VALUE &apos;Resource at &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos; must be a CIS view to be partitioned. Exiting.&apos;;
+        END IF;
+
+        -- Exit with error if partition container folder does not exist.
+        --
+        CALL PRINT(PROC_NAME || &apos;: making sure PARTITIONS_PARENT_FOLDER exists&apos;);
+        CALL ResourceExists(
+            Constants.PARTITIONS_PARENT_FOLDER, 
+            ResourceDefs.RESOURCE_TYPE_CONTAINER, 
+            NULL,
+            partitionParentExists
+        );
+        IF (NOT origViewExists) THEN
+            RAISE System.IllegalStateException VALUE &apos;Partition container folder, &quot;&apos; || Constants.PARTITIONS_PARENT_FOLDER || &apos;&quot;, does not exist. Exiting.&apos;;
+        END IF;
+      
+        -- Exit with error if partition subfolder already exists.
+        --
+        CALL PRINT(PROC_NAME || &apos;: making sure PARTITION_FOLDER does not exist&apos;);
+        CALL ResourceExists(
+            PARTITION_FOLDER, 
+            ResourceDefs.RESOURCE_TYPE_CONTAINER, 
+            NULL,
+            partitionFolderExists
+        );
+        IF (partitionFolderExists) THEN
+            RAISE System.IllegalStateException VALUE &apos;Partitioning folder, &quot;&apos; || PARTITION_FOLDER || &apos;&quot;, already exists. Exiting.&apos;;
+        END IF;
+    END IF; -- (configurePartitioning)
+
+    -- make sure view to be incrementally cached isn&apos;t impacted for some reason.
+    --
+    CALL PRINT(PROC_NAME || &apos;: making sure VIEW_PATH isn&apos;&apos;t impacted&apos;);
+    SELECT
+        impactLevel,
+        impactMessage
+    INTO
+        myImpactLevel,
+        myImpactMessage
+    FROM
+        /shared/ASAssets/Utilities/repository/getResourceImpactedCursor(
+            ESCAPED_VIEW_PATH,
+            ResourceDefs.RESOURCE_TYPE_TABLE
+        );
+
+    IF (myImpactLevel IS NULL OR myImpactLevel &lt;&gt; &apos;NONE&apos;) THEN
+        RAISE System.IllegalStateException VALUE &apos;View to be incrementally cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, is impacted: &apos; || myImpactMessage || &apos;. Exiting.&apos;;
+    END IF;
+  
+    -- get list of column names and data types for the view
+    --
+    CALL PRINT(PROC_NAME || &apos;: getting cached view&apos;&apos;s columns&apos;);
+    FOR r AS
+        SELECT
+            columnName,
+            columnType
+        FROM
+            /shared/ASAssets/Utilities/repository/getBasicResourceCursor_SQL_TABLE(
+                ESCAPED_VIEW_PATH,
+                ResourceDefs.RESOURCE_TYPE_TABLE
+            ) 
+        WHERE
+            columnName IS NOT NULL
+    DO
+        SET columnList = EXTEND(columnList, 1);
+        SET columnList[CARDINALITY(columnList)] = r;
+    END FOR;
+
+    IF (CARDINALITY(columnList) &lt; 1) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;View to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, does not have any columns defined. Exiting.&apos;;
+    END IF;
+
+    -- parse the input list of primary key columns into a VECTOR of column names
+    --
+    FOR r AS
+        SELECT CSValue FROM /shared/ASAssets/Utilities/string/ParseCSVLine(inPkColCSV, &apos;,&apos;, &apos;&quot;&apos;)
+    DO
+        SET pkColList = EXTEND(pkColList, 1);
+        SET pkColList[CARDINALITY(pkColList)] = r.CSValue;
+    END FOR; 
+
+    -- parse the input list of last updated columns into a VECTOR of column names
+    --
+    FOR r AS
+        SELECT CSValue FROM /shared/ASAssets/Utilities/string/ParseCSVLine(inLastUpdatedColCSV, &apos;,&apos;, &apos;&quot;&apos;)
+    DO
+        SET luColList = EXTEND(luColList, 1);
+        SET luColList[CARDINALITY(luColList)] = r.CSValue;
+    END FOR; 
+
+    -- go through list of primary keys from configuration definition and figure out their data types. identify the activity date column.
+    --
+    CALL PRINT(PROC_NAME || &apos;: checking &quot;primary key&quot; column(s) of &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;&apos;);
+    IF (CARDINALITY(pkColList) = 0) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;List of primary key columns, inPkColCSV, must name at least one column. Exiting.&apos;;
+    END IF;
+
+    SET i = 0;
+    colLoop: 
+    WHILE (i &lt; CARDINALITY(columnList)) DO
+        SET i = i + 1;
+
+        SET j = 0;
+        pkLoop:
+        WHILE (j &lt; CARDINALITY(pkColList)) DO
+            SET j = j + 1;
+
+            IF (columnList[i].colName = pkColList[j]) THEN
+                SET pkList = EXTEND(pkList, 1);
+                SET pkList[CARDINALITY(pkList)] = columnList[i];
+            END IF;
+        END WHILE;
+
+        IF (columnList[i].colName = inActivityDateCol) THEN
+            SET activityDateSpec = columnList[i];
+        END IF;
+
+    END WHILE;
+
+    IF (CARDINALITY(pkColList) &lt;&gt; CARDINALITY(pkList)) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;Unable to verify the list of primary key columns in inPkColCSV. (# cols = &apos;|| CARDINALITY(columnList) || &apos;, specified = &apos; || CARDINALITY(pkColList) || &apos;, found = &apos; || CARDINALITY(pkList) || &apos;.) Exiting.&apos;;
+    END IF;
+
+    IF (configurePartitioning AND activityDateSpec IS NULL) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;Activity date column , &quot;&apos; || COALESCE(inActivityDateCol, &apos;NULL&apos;) || &apos;&quot;, in view to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, could not be found. Exiting.&apos;;
+    END IF;
+
+    -- go through list of last updated columns from configuration definition and figure out their data types.    -- create a new CSV of properly escaped column names (used in GREATEST calls.)
+    --
+    CALL PRINT(PROC_NAME || &apos;: checking &quot;last updated&quot; column(s) of &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;&apos;);
+    IF (CARDINALITY(luColList) = 0) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;List of &quot;last updated&quot; columns, inLastUpdatedColCSV, must name at least one column. Exiting.&apos;;
+    END IF;
+
+    SET i = 0;
+    colLoop: 
+    WHILE (i &lt; CARDINALITY(columnList)) DO
+        SET i = i + 1;
+
+        SET j = 0;
+        luLoop:
+        WHILE (j &lt; CARDINALITY(luColList)) DO
+            SET j = j + 1;
+
+            IF (columnList[i].colName = luColList[j]) THEN
+                SET luList = EXTEND(luList, 1);
+                SET luList[CARDINALITY(luList)] = columnList[i];
+            END IF;
+        END WHILE;
+    END WHILE;
+
+    IF (CARDINALITY(luColList) &lt;&gt; CARDINALITY(luList)) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;Unable to verify the list of &quot;last updated&quot; columns in inLastUpdatedColCSV. (# cols = &apos;|| CARDINALITY(columnList) || &apos;, specified = &apos; || CARDINALITY(luColList) || &apos;, found = &apos; || CARDINALITY(luList) || &apos;.) Exiting.&apos;;
+    END IF;
+
+    -- create a new CSV of properly escaped &quot;last updated&quot; column names (used in GREATEST calls.)
+    --
+    SET i = 0;
+    luLoop:
+    WHILE (i &lt; CARDINALITY(luList)) DO
+        SET i = i + 1;
+
+        IF (i &gt; 1) THEN
+            SET luCSV = luCSV || &apos;, &apos;;
+        END IF;
+
+        SET luCSV = luCSV || &apos;&quot;&apos; || luList[i].colName || &apos;&quot;&apos;;
+    END WHILE;
+
+    -- verify that resource to apply incremental cache to has caching set up, is enabled, etc. 
+    --   (can&apos;t create database cache data tables from here so make the CIS admin take care of it.
+    --   If partitioning is configured, this script will disable the cache definition from this 
+    --   view and apply the definition to the cached partition view.)
+    --
+    CALL PRINT(PROC_NAME || &apos;: getting caching config on VIEW_PATH&apos;);
+    OPEN cacheConfigCursor FOR
+        SELECT
+           *
+        FROM 
+            /shared/ASAssets/Utilities/repository/getResourceCacheConfigCursor(
+                ESCAPED_VIEW_PATH, 
+                ResourceDefs.RESOURCE_TYPE_TABLE
+            );
+    FETCH cacheConfigCursor INTO origCacheConfig;
+    CLOSE cacheConfigCursor;
+ 
+    IF (origCacheConfig.configured = 0 OR origCacheConfig.enabled IS NULL) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;View to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, must have caching defined and enabled. Exiting.&apos;;
+    END IF;
+
+    IF (origCacheConfig.incremental = 1) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;View to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, is already configured for incremental caching. Exiting&apos;;
+    END IF;
+
+    IF (origCacheConfig.storageMode = &apos;DATA_SOURCE_OTPS&apos;) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;View to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, is configured for multi-table caching, which is not supported with this incremental caching solution. Exiting&apos;;
+    END IF;
+
+    -- make sure the caching DB isn&apos;t impacted for some reason
+    --
+    CALL PRINT(PROC_NAME || &apos;: making sure cache DB isn&apos;&apos;t impacted&apos;);
+    SELECT
+        impactLevel,
+        impactMessage
+    INTO
+        myImpactLevel,
+        myImpactMessage
+    FROM
+        /shared/ASAssets/Utilities/repository/getResourceImpactedCursor(
+            origCacheConfig.storageDataSourcePath,
+            ResourceDefs.RESOURCE_TYPE_DATA_SOURCE
+        );
+    IF (myImpactLevel IS NULL OR myImpactLevel &lt;&gt; &apos;NONE&apos;) THEN
+        RAISE System.IllegalStateException VALUE &apos;The data source configured to hold the cache data, &quot;&apos; || origCacheConfig.storageDataSourcePath || &apos;&quot;, is impacted: &apos; || myImpactMessage || &apos;. Exiting.&apos;;
+    END IF;
+  
+    -- make sure the caching DB is configured for caching.
+    --
+    CALL PRINT(PROC_NAME || &apos;: checking caching DB&apos;&apos;s cache config&apos;);
+    CALL /shared/ASAssets/Utilities/repository/getDataSourceCacheConfig(
+        origCacheConfig.storageDataSourcePath,
+        cacheStatusPath,
+        cacheTrackingPath
+    ); 
+    IF (cacheStatusPath IS NULL OR cacheTrackingPath IS NULL) THEN
+        RAISE System.IllegalStateException VALUE &apos;Data source used for caching, &quot;&apos; || origCacheConfig.storageDataSourcePath || &apos;&quot;, must have caching status and tracking tables defined. Exiting.&apos;;
+    END IF;
+
+    -- get the type of the cache DB and make sure it&apos;s supported by this package
+    --
+    SELECT
+        attrValue
+    INTO
+        cacheDsType
+    FROM
+        /shared/ASAssets/Utilities/repository/getDataSourceAttributes(origCacheConfig.storageDataSourcePath)
+    WHERE
+        attrName = &apos;type&apos;;
+
+    BEGIN
+        DECLARE tmp VARCHAR;
+        DECLARE i INTEGER DEFAULT 1;
+        WHILE (i &lt;= CARDINALITY(Constants.DATABASE_TYPE_LABELS)) DO
+            SET tmp = Constants.DATABASE_TYPE_LABELS[i]; -- putting this in the IF statement below causes IllegalArgumentException on save
+    		IF (tmp = cacheDsType) THEN
+    			SET cacheDsTypeNum = i;
+            END IF;
+            SET i = i + 1;
+        END WHILE;
+    END;
+
+    IF (cacheDsTypeNum = -1) THEN
+        RAISE System.NotSupportedException VALUE &apos;Data source used for caching, &quot;&apos; || origCacheConfig.storageDataSourcePath || &apos;&quot;, must be one of the data source types listed in &apos; || Constants.CONFIG_FOLDER || &apos;/Constants.DATABASE_TYPE_LABELS. Exiting.&apos;;
+    END IF;
+
+    -- get list of column names and data types for the cache data table
+    --
+    CALL PRINT(PROC_NAME || &apos;: getting cache table columns&apos;);
+    FOR r AS
+        SELECT
+            columnName,
+            columnType
+        FROM
+            /shared/ASAssets/Utilities/repository/getBasicResourceCursor_SQL_TABLE(
+                origCacheConfig.storagePath,
+                ResourceDefs.RESOURCE_TYPE_TABLE
+            ) 
+        WHERE
+            columnName &lt;&gt; inCacheTableCacheKeyCol AND
+            columnName IS NOT NULL
+    DO
+        SET cacheColumnList = EXTEND(cacheColumnList, 1);
+        SET cacheColumnList[CARDINALITY(cacheColumnList)] = r;
+    END FOR;
+
+    IF (CARDINALITY(columnList) &lt;&gt; CARDINALITY(cacheColumnList)) THEN
+        RAISE System.IllegalArgumentException VALUE &apos;Number of columns in view to be cached, &apos;&apos;&apos; || ESCAPED_VIEW_PATH || &apos;&apos;&apos;, does not match the number of columns in the caching table, &quot;&apos; || origCacheConfig.storagePath || &apos;&quot;. Exiting.&apos;;
+    END IF;
+
+    -- add some of what was discovered above to the collection configuration list
+    --
+    SET myIncrConfList = EXTEND(myIncrConfList, 1);
+    SET myIncrConfList[CARDINALITY(myIncrConfList)] = (&apos;ActivityDateCol&apos;, inActivityDateCol);
+
+    SET myIncrConfList = EXTEND(myIncrConfList, 1);
+    SET myIncrConfList[CARDINALITY(myIncrConfList)] = (&apos;ConfigurePartitioning&apos;, UPPER(CAST(configurePartitioning AS VARCHAR)));
+
+    CALL serializeColumnDefList(pkList, serializedColDefs); 
+    SET myIncrConfList = EXTEND(myIncrConfList, 1);
+    SET myIncrConfList[CARDINALITY(myIncrConfList)] = (&apos;PkListCSV&apos;, serializedColDefs);
+
+    -- verify the inputs specific to increment type. each check procedure will return
+    -- a list of additional configuration information needed to set up the collection
+    -- script.
+    --
+    CASE (incrType)
+        WHEN Constants.INCR_TYPE_NONE THEN -- nothing to check here. move on. move on.
+            SET myIncrConfList = NULL;
+        WHEN Constants.INCR_TYPE_LAST_UPDATED THEN
+            CALL checkInputsLastUpdated(myIncrConfList, collectConfList);
+        WHEN Constants.INCR_TYPE_DELTA THEN
+            CALL checkInputsDelta(myIncrConfList, collectConfList);
+        ELSE
+            RAISE System.IllegalArgumentException VALUE &apos;Incremental update type of &apos; || incrType || &apos; is not a supported type.&apos;;
+    END CASE; 
+
+/*
+** End sanity checks
+*/
+
+/*
+** Create staging table for shipped data.
+*/
+
+    SET cacheTablePath = applyReservedListToPath(REPLACE(origCacheConfig.storagePath, &apos;&quot;&apos;, &apos;&apos;), &apos;N&apos;);
+    SET cacheStageTablePath = applyReservedListToPath(REPLACE(cacheTablePath, &apos;&quot;&apos;, &apos;&apos;) || Constants.STAGE_TABLE_SUFFIX, &apos;N&apos;);
+
+    CALL PRINT (PROC_NAME || &apos;: creating incremental staging table: &apos; || basename(dirname(cacheTablePath)) || &apos;.&apos; || basename(cacheStageTablePath) || &apos; in data source &apos; || origCacheConfig.storageDataSourcePath || &apos;.&apos;);
+
+    BEGIN INDEPENDENT TRANSACTION
+		DECLARE catalogName ResourceDefs.ResourceName DEFAULT NULL;
+		DECLARE schemaName ResourceDefs.ResourceName DEFAULT NULL;
+
+        CASE cacheDsTypeNum
+            WHEN Constants.DATABASE_TYPE_ORACLE THEN
+                SET schemaName = basename(dirname(cacheTablePath));
+
+            WHEN Constants.DATABASE_TYPE_MSSQL THEN
+                SET catalogName = basename(dirname(dirname(cacheTablePath)));
+                SET schemaName = basename(dirname(cacheTablePath));
+
+        END CASE;
+
+        -- create staging table (need to figure out how to configure for different database vendors.
+        --
+        CALL CreateTableAs(
+            catalogName,
+            schemaName,
+            basename(cacheStageTablePath),
+            basename(cacheTablePath),
+            cacheDsTypeNum,
+            origCacheConfig.storageDataSourcePath,
+            callStatus
+        );
+    END; -- independent transaction
+
+    IF (callStatus &lt;&gt; 1) THEN
+        RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create incremental cache data staging table named &quot;&apos; || basename(dirname(cacheTablePath)) || &apos;&quot;.&quot;&apos; || basename(cacheStageTablePath) || &apos;&quot;&apos;;
+    END IF;
+
+/*
+** Create container folders
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating container folders.&apos;);
+    BEGIN INDEPENDENT TRANSACTION
+        -- create incremental cache subfolder
+        --
+        CALL /shared/ASAssets/Utilities/repository/createAllFolders(
+            INCR_CACHE_FOLDER,
+            callStatus,
+            callFault
+        );
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create folder &quot;&apos; || INCR_CACHE_FOLDER || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- create partition subfolder, if necessary
+        --
+        IF (configurePartitioning) THEN
+            CALL /shared/ASAssets/Utilities/repository/createAllFolders(
+                PARTITION_FOLDER,
+                callStatus,
+                callFault
+            );
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create folder &quot;&apos; || PARTITION_FOLDER || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+        END IF;
+    END; -- independent transaction
+
+/*
+** Create partition views (if necessary)
+*/
+
+    IF (configurePartitioning) THEN
+        BEGIN INDEPENDENT TRANSACTION
+            -- copy the original view to the partition folder
+            --
+            CALL PRINT(PROC_NAME || &apos;: copying original view to &apos;&apos;&apos; || origViewPath || &apos;&apos;&apos;.&apos;);
+    
+            CALL CopyResource(
+                ESCAPED_VIEW_PATH,
+                ResourceDefs.RESOURCE_TYPE_TABLE,
+                PARTITION_FOLDER,
+                VIEW_NAME || &apos;_orig&apos;,
+                ResourceDefs.FAIL_IF_EXISTS
+            ); 
+    
+            -- create the column list substitution code
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            WHILE (i &lt; CARDINALITY(columnList)) DO
+                SET i = i + 1;
+        
+                SET columnListSub = columnListSub || &apos;    &quot;&apos; || columnList[i].colName || &apos;&quot;&apos;;
+                IF (i &lt;&gt; CARDINALITY(columnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+                SET columnListSub = columnListSub || NL;
+            END WHILE;
+    
+            -- create the cached view code
+            --
+            CALL PRINT (PROC_NAME || &apos;: creating the cached partition view, &quot;&apos; || cachedViewPath || &apos;&quot;.&apos;);
+    
+            SET viewText = ProcedureTemplates.PART_CACHED_VIEW_TEMPLATE;
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_SELECT_ALL_COLS&gt;&apos;, columnListSub, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ORIG_VIEW_PATH&gt;&apos;, origViewPath, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ACTIVITY_DATE_COLUMN&gt;&apos;, inActivityDateCol, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PARTITION_DATE&gt;&apos;, partDate, 0);
+    
+            -- create the cached view resource
+            --
+            CALL /shared/ASAssets/Utilities/repository/createResource(
+                PARTITION_FOLDER,
+                VIEW_NAME || &apos;_cached&apos;,
+                ResourceDefs.RESOURCE_TYPE_TABLE,
+                ResourceDefs.RESOURCE_SUBTYPE_SQL_TABLE,
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create view &quot;&apos; || cachedViewPath || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+    
+    
+            -- update the new view with the SQL
+            --
+            CALL /shared/ASAssets/Utilities/repository/updateSqlTable(
+                cachedViewPath,
+                viewText,
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update view text for &quot;&apos; || cachedViewPath || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+    
+            -- create the live view code
+            --
+            CALL PRINT (PROC_NAME || &apos;: creating the live partition view, &quot;&apos; || liveViewPath || &apos;&quot;.&apos;);
+    
+            SET viewText = ProcedureTemplates.PART_LIVE_VIEW_TEMPLATE;
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_SELECT_ALL_COLS&gt;&apos;, columnListSub, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ORIG_VIEW_PATH&gt;&apos;, origViewPath, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ACTIVITY_DATE_COLUMN&gt;&apos;, inActivityDateCol, 0);
+            SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PARTITION_DATE&gt;&apos;, partDate, 0);
+    
+            -- create the live view resource
+            --
+            CALL /shared/ASAssets/Utilities/repository/createResource(
+                PARTITION_FOLDER,
+                VIEW_NAME || &apos;_live&apos;,
+                ResourceDefs.RESOURCE_TYPE_TABLE,
+                ResourceDefs.RESOURCE_SUBTYPE_SQL_TABLE,
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create view &quot;&apos; || liveViewPath || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+    
+    
+            -- update the new view with the SQL
+            --
+            CALL /shared/ASAssets/Utilities/repository/updateSqlTable(
+                liveViewPath,
+                viewText,
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update view text for &quot;&apos; || liveViewPath || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+        END; -- independent transaction
+    END IF;
+
+
+/*
+** Create Definitions
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating &apos; || INCR_CACHE_FOLDER || &apos;/Definitions&apos;);
+
+    -- create the procedure code
+    --
+    SET procText = ProcedureTemplates.DEFINITIONS_TEMPLATE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_CONFIG_FOLDER&gt;&apos;, Constants.CONFIG_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PERFORM_INCREMENTAL&gt;&apos;, CASE WHEN (incrType = Constants.INCR_TYPE_NONE) THEN &apos;FALSE&apos; ELSE &apos;TRUE&apos; END, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_HAS_PARTITION&gt;&apos;, UPPER(CAST(configurePartitioning AS VARCHAR(5))), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PARTITION_PERIOD_MONTHS&gt;&apos;, CASE WHEN (inPartitionPeriodMonths IS NULL) THEN &apos;NULL&apos; ELSE CAST(inPartitionPeriodMonths AS VARCHAR) END, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHED_VIEW_PATH&gt;&apos;, cachedViewPath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_LIVE_VIEW_PATH&gt;&apos;, liveViewPath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_UNION_VIEW_PATH&gt;&apos;, unionViewPath, 0);
+
+    SET columnListSub = &apos;&apos;;
+    SET i = 0;
+    WHILE (i &lt; CARDINALITY(columnList)) DO
+        SET i = i + 1;
+
+        SET columnListSub = columnListSub || &apos;        &quot;&apos; || columnList[i].colName || &apos;&quot; &apos; || columnList[i].colType || &apos;,&apos; || NL;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_COLUMN_DEFINITION_LIST&gt;&apos;, columnListSub, 0);
+
+    BEGIN INDEPENDENT TRANSACTION
+        -- create the procedure resource
+        --
+        CALL /shared/ASAssets/Utilities/repository/createResource(
+            INCR_CACHE_FOLDER,
+            &apos;Definitions&apos;,
+            ResourceDefs.RESOURCE_TYPE_PROCEDURE,
+            ResourceDefs.RESOURCE_SUBTYPE_SQL_SCRIPT_PROCEDURE,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create procedure &quot;&apos; || INCR_CACHE_FOLDER || &apos;/Definitions&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- update the new procedure with the procedure code
+        --
+        CALL /shared/ASAssets/Utilities/repository/updateSqlScript(
+            INCR_CACHE_FOLDER || &apos;/Definitions&apos;,
+            procText,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update procedure text for &quot;&apos; || INCR_CACHE_FOLDER || &apos;/Definitions&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    END; -- independent transaction
+/*
+** Create fullCacheRefresh
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating &apos; || INCR_CACHE_FOLDER || &apos;/fullCacheRefresh&apos;);
+
+    -- create the procedure code
+    --
+    SET procText = ProcedureTemplates.FULL_CACHE_REFRESH_TEMPLATE[incrType];
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CONFIG_FOLDER&gt;&apos;, Constants.CONFIG_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_COMMON_FOLDER&gt;&apos;, Constants.COMMON_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_PARENT_FOLDER&gt;&apos;, Constants.INCR_CACHE_PARENT_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_FOLDER&gt;&apos;, INCR_CACHE_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHEKEY_COLUMN&gt;&apos;, inCacheTableCacheKeyCol, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_LAST_UPDATED_COLUMN_LIST&gt;&apos;, CASE WHEN CARDINALITY(luList) &gt; 1 THEN &apos;GREATEST(&apos; || luCSV || &apos;)&apos; ELSE luCSV END, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHED_VIEW_PATH&gt;&apos;, cachedViewPath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_TABLE_PATH&gt;&apos;, cacheTablePath, 0);
+    BEGIN INDEPENDENT TRANSACTION
+        -- create the procedure resource
+        --
+        CALL /shared/ASAssets/Utilities/repository/createResource(
+            INCR_CACHE_FOLDER,
+            &apos;fullCacheRefresh&apos;,
+            ResourceDefs.RESOURCE_TYPE_PROCEDURE,
+            ResourceDefs.RESOURCE_SUBTYPE_SQL_SCRIPT_PROCEDURE,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create procedure &quot;&apos; || INCR_CACHE_FOLDER || &apos;/collectIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- update the new procedure with the procedure code
+        --
+        CALL /shared/ASAssets/Utilities/repository/updateSqlScript(
+            INCR_CACHE_FOLDER || &apos;/fullCacheRefresh&apos;,
+            procText,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update procedure text for &quot;&apos; || INCR_CACHE_FOLDER || &apos;/collectIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    END; -- independent transaction
+
+/*
+** Create collectIncrement
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating &apos; || INCR_CACHE_FOLDER || &apos;/collectIncrement&apos;);
+
+    -- create the procedure code
+    --
+    SET procText = ProcedureTemplates.COLLECT_INCREMENT_TEMPLATE[incrType];
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CONFIG_FOLDER&gt;&apos;, Constants.CONFIG_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_COMMON_FOLDER&gt;&apos;, Constants.COMMON_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_PARENT_FOLDER&gt;&apos;, Constants.INCR_CACHE_PARENT_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_FOLDER&gt;&apos;, INCR_CACHE_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_LAST_UPDATED_COLUMN_LIST&gt;&apos;, CASE WHEN CARDINALITY(luList) &gt; 1 THEN &apos;GREATEST(&apos; || luCSV || &apos;)&apos; ELSE luCSV END, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHEKEY_COLUMN&gt;&apos;, inCacheTableCacheKeyCol, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_STATUS_PATH&gt;&apos;, cacheStatusPath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHED_VIEW_PATH&gt;&apos;, cachedViewPath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_TABLE_PATH&gt;&apos;, cacheTablePath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_COMMENT_OPEN&gt;&apos;, partCommentOpen, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_COMMENT_CLOSE&gt;&apos;, partCommentClose, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_SL_COMMENT&gt;&apos;, partSLComment, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_TRUNCATE_TABLE_PROC&gt;&apos;, Constants.TRUNCATE_TABLE_PATHS[cacheDsTypeNum], 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_STAGE_TABLE_NAME&gt;&apos;, REPLACE(basename(cacheStageTablePath), &apos;&quot;&apos;, &apos;&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_STAGE_TABLE_PATH&gt;&apos;, cacheStageTablePath, 0);
+
+    IF (configurePartitioning) THEN
+        SET procText = RegexReplace (procText, &apos;&lt;DEF_ACTIVITY_DATE_COLUMN&gt;&apos;, COALESCE(inActivityDateCol, &apos;NULL&apos;, &apos;NULL&apos;), 0);
+    END IF;
+
+    -- create select list for gathering incremental rows.
+    --
+    SET columnListSub = &apos;&apos;;
+    SET i = 0;
+    WHILE (i &lt; CARDINALITY(columnList)) DO
+        SET i = i + 1;
+
+        SET columnListSub = columnListSub || &apos;                incr_src.&quot;&apos; || columnList[i].colName || &apos;&quot;&apos;;
+        IF (i &lt;&gt; CARDINALITY(cacheColumnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+        SET columnListSub = columnListSub || NL;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_SELECT_ALL_COLS&gt;&apos;, columnListSub, 0);
+
+    -- create insert PK list
+    --
+    SET columnListSub = &apos;&apos;;
+    SET i = 0;
+    myLoop: 
+    WHILE (i &lt; CARDINALITY(pkList)) DO
+        SET i = i + 1;
+
+        IF (configurePartitioning AND pkList[i].colName = inActivityDateCol) THEN -- activity date called out separately in the template
+            ITERATE myLoop;
+        END IF;
+
+        SET columnListSub = columnListSub || &apos;            &quot;&apos; || pkList[i].colName || &apos;&quot;, &apos; || NL;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INSERT_PK_COLS&gt;&apos;, columnListSub, 0);
+
+    -- create select list for gathering expired rows to delete from cache partition.
+    --
+    SET columnListSub = &apos;&apos;;
+    SET i = 0;
+    myLoop: 
+    WHILE (i &lt; CARDINALITY(pkList)) DO
+        SET i = i + 1;
+
+        IF (configurePartitioning AND pkList[i].colName = inActivityDateCol) THEN -- activity date called out separately in the template
+            ITERATE myLoop;
+        END IF;
+
+        SET columnListSub = columnListSub || &apos;                c.&quot;&apos; || pkList[i].colName || &apos;&quot;, &apos; || NL;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_SELECT1_PK_COLS&gt;&apos;, columnListSub, 0);
+
+    -- create the set list for gathering expired rows to delete from cache partition
+    --
+    SET columnListSub = &apos;&apos;;
+    SET i = 0;
+    myLoop: 
+    WHILE (i &lt; CARDINALITY(pkList)) DO
+        SET i = i + 1;
+
+        IF (configurePartitioning AND pkList[i].colName = inActivityDateCol) THEN -- activity date called out separately in the template
+            ITERATE myLoop;
+        END IF;
+
+        SET columnListSub = columnListSub || &apos;            SET l_dRow.&quot;&apos; || pkList[i].colName || &apos;&quot; = r.&quot;&apos; || pkList[i].colName || &apos;&quot;;&apos; || NL;
+    END WHILE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_DEL_SET_DROW_PK&gt;&apos;, columnListSub, 0);
+
+    -- make any updates specific to the increment type
+    --
+    CASE (incrType)
+        WHEN Constants.INCR_TYPE_NONE THEN -- nothing to update here. move on. move on.
+            SET collectConfList = NULL;
+        WHEN Constants.INCR_TYPE_LAST_UPDATED THEN
+            CALL updateCollectIncrementLastUpdated(collectConfList, procText);
+        WHEN Constants.INCR_TYPE_DELTA THEN
+            CALL updateCollectIncrementDelta(collectConfList, procText);
+        ELSE
+            RAISE System.IllegalArgumentException VALUE &apos;Incremental update type of &apos; || incrType || &apos; is not a supported type.&apos;;
+    END CASE; 
+
+    BEGIN INDEPENDENT TRANSACTION
+        -- create the procedure resource
+        --
+        CALL /shared/ASAssets/Utilities/repository/createResource(
+            INCR_CACHE_FOLDER,
+            &apos;collectIncrement&apos;,
+            ResourceDefs.RESOURCE_TYPE_PROCEDURE,
+            ResourceDefs.RESOURCE_SUBTYPE_SQL_SCRIPT_PROCEDURE,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create procedure &quot;&apos; || INCR_CACHE_FOLDER || &apos;/collectIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- update the new procedure with the procedure code
+        --
+        CALL /shared/ASAssets/Utilities/repository/updateSqlScript(
+            INCR_CACHE_FOLDER || &apos;/collectIncrement&apos;,
+            procText,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update procedure text for &quot;&apos; || INCR_CACHE_FOLDER || &apos;/collectIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    END; -- independent transaction
+
+/*
+** Create applyIncrement
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating &apos; || INCR_CACHE_FOLDER || &apos;/applyIncrement&apos;);
+
+    -- create the procedure code
+    --
+    SET procText = ProcedureTemplates.APPLY_INCREMENT_TEMPLATES[cacheDsTypeNum];
+
+    -- these replacements happen for all database types
+    --
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CONFIG_FOLDER&gt;&apos;, Constants.CONFIG_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_COMMON_FOLDER&gt;&apos;, Constants.COMMON_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_PARENT_FOLDER&gt;&apos;, Constants.INCR_CACHE_PARENT_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_FOLDER&gt;&apos;, INCR_CACHE_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_TABLE_NAME&gt;&apos;, REPLACE(basename(cacheTablePath), &apos;&quot;&apos;, &apos;&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_STAGE_TABLE_NAME&gt;&apos;, REPLACE(basename(cacheStageTablePath), &apos;&quot;&apos;, &apos;&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHEKEY_COLUMN&gt;&apos;, inCacheTableCacheKeyCol, 0);
+
+    CASE (cacheDsTypeNum)
+        WHEN Constants.DATABASE_TYPE_ORACLE THEN
+
+            -- create select list for MERGE/REPLACE
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            WHILE (i &lt; CARDINALITY(cacheColumnList)) DO
+                SET i = i + 1;
+
+                SET columnListSub = columnListSub || &apos;    &quot;&apos; || cacheColumnList[i].colName || &apos;&quot;&apos;;
+                IF (i &lt;&gt; CARDINALITY(cacheColumnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+                SET columnListSub = columnListSub || NL;
+            END WHILE;
+
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_SEL_COLUMNS&gt;&apos;, columnListSub, 0);
+
+            -- create MERGE join criteria between cache data and staged incremental data
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            myLoop:
+            WHILE (i &lt; CARDINALITY(pkList)) DO
+                SET i = i + 1;
+
+                IF (i &gt; 1) THEN
+                    SET columnListSub = columnListSub || &apos;AND &apos;;
+                END IF;
+                SET columnListSub = columnListSub || &apos;c.&quot;&apos; || pkList[i].colName || &apos;&quot; = d.&quot;&apos; || pkList[i].colName || &apos;&quot;&apos; || NL;
+            END WHILE;
+
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_JOIN_COND&gt;&apos;, columnListSub, 0);
+
+            -- create update set list for MERGE (this clause may not update PK columns used join criteria above.)
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            WHILE (i &lt; CARDINALITY(cacheColumnList)) DO
+                SET i = i + 1;
+
+                -- make sure this column isn&apos;t a primary key.
+                --
+                SET j = 0;
+                SET pkFound = FALSE;
+                pkLoop: WHILE (j &lt; CARDINALITY(pkList)) DO
+                    SET j = j + 1;
+         
+                    IF (cacheColumnList[i].colName = pkList[j].colName) THEN
+                        SET pkFound = TRUE;
+                        LEAVE pkLoop;
+                    END IF;
+                END WHILE;
+
+                IF (NOT pkFound) THEN
+                    SET columnListSub = columnListSub || &apos;    c.&quot;&apos; || cacheColumnList[i].colName || &apos;&quot; = d.&quot;&apos; || cacheColumnList[i].colName || &apos;&quot;&apos;;
+                    IF (i &lt;&gt; CARDINALITY(cacheColumnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+                    SET columnListSub = columnListSub || NL;
+                END IF;
+            END WHILE;
+
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_UPD_LIST&gt;&apos;, columnListSub, 0);
+
+            -- create insert column list for MERGE
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            WHILE (i &lt; CARDINALITY(cacheColumnList)) DO
+                SET i = i + 1;
+
+                SET columnListSub = columnListSub || &apos;    c.&quot;&apos; || cacheColumnList[i].colName || &apos;&quot;&apos;;
+                IF (i &lt;&gt; CARDINALITY(cacheColumnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+                SET columnListSub = columnListSub || NL;
+            END WHILE;
+
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_INS_COLUMNS&gt;&apos;, columnListSub, 0);
+
+            -- create insert value list for MERGE
+            --
+            SET columnListSub = &apos;&apos;;
+            SET i = 0;
+            WHILE (i &lt; CARDINALITY(cacheColumnList)) DO
+                SET i = i + 1;
+
+                SET columnListSub = columnListSub || &apos;    d.&quot;&apos; || cacheColumnList[i].colName || &apos;&quot;&apos;;
+                IF (i &lt;&gt; CARDINALITY(cacheColumnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+                SET columnListSub = columnListSub || NL;
+            END WHILE;
+
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_INS_VALUES&gt;&apos;, columnListSub, 0);
+            
+        WHEN Constants.DATABASE_TYPE_MYSQL THEN
+
+        WHEN Constants.DATABASE_TYPE_MSSQL THEN
+
+    END CASE;
+
+    BEGIN INDEPENDENT TRANSACTION
+        -- create the procedure resource
+        --
+        CALL /shared/ASAssets/Utilities/repository/createResource(
+            INCR_CACHE_FOLDER,
+            &apos;applyIncrement&apos;,
+            ResourceDefs.RESOURCE_TYPE_PROCEDURE,
+            ResourceDefs.RESOURCE_SUBTYPE_SQL_SCRIPT_PROCEDURE,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create procedure &quot;&apos; || INCR_CACHE_FOLDER || &apos;/applyIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- update the new procedure with the procedure code
+        --
+        CALL /shared/ASAssets/Utilities/repository/updateSqlScript(
+            INCR_CACHE_FOLDER || &apos;/applyIncrement&apos;,
+            procText,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update procedure text for &quot;&apos; || INCR_CACHE_FOLDER || &apos;/applyIncrement&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    END; -- independent transaction
+
+/*
+** Create incrementalRefresh
+*/
+    CALL PRINT (PROC_NAME || &apos;: creating &apos; || INCR_CACHE_FOLDER || &apos;/incrementalRefresh&apos;);
+
+    -- create the procedure code
+    --
+    SET procText = ProcedureTemplates.INCREMENTAL_REFRESH_TEMPLATE;
+
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CONFIG_FOLDER&gt;&apos;, Constants.CONFIG_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_COMMON_FOLDER&gt;&apos;, Constants.COMMON_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_PARENT_FOLDER&gt;&apos;, Constants.INCR_CACHE_PARENT_FOLDER, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_INCR_CACHE_FOLDER&gt;&apos;, INCR_CACHE_FOLDER, 0);
+    --SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_COMMENT_OPEN&gt;&apos;, partCommentOpen, 0);
+    --SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_COMMENT_CLOSE&gt;&apos;, partCommentClose, 0);
+    --SET procText = RegexReplace (procText, &apos;&lt;DEF_PART_SL_COMMENT&gt;&apos;, partSLComment, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_STAGE_TABLE_PATH&gt;&apos;, cacheStageTablePath, 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CREATE_TABLE_AS_PROC&gt;&apos;, Constants.CREATE_TABLE_AS_PATHS[cacheDsTypeNum], 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_TABLE_NAME&gt;&apos;, REPLACE(basename(cacheTablePath), &apos;&quot;&apos;, &apos;&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_STAGE_TABLE_NAME&gt;&apos;, REPLACE(basename(cacheStageTablePath), &apos;&quot;&apos;, &apos;&apos;), 0);
+    SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_DS&gt;&apos;, REPLACE(dirname(dirname(cacheTablePath)), &apos;&quot;&apos;, &apos;&apos;), 0);
+
+    CASE (cacheDsTypeNum)
+        WHEN Constants.DATABASE_TYPE_ORACLE THEN
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_CATALOG&gt;&apos;, &apos;NULL&apos;, 0);
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_SCHEMA&gt;&apos;, &apos;&apos;&apos;&apos; || REPLACE(basename(dirname(cacheTablePath)), &apos;&quot;&apos;, &apos;&apos;) || &apos;&apos;&apos;&apos;, 0);
+        WHEN Constants.DATABASE_TYPE_MYSQL THEN
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_CATALOG&gt;&apos;, &apos;NULL&apos;, 0);
+            SET procText = RegexReplace (procText, &apos;&lt;DEF_CACHE_SCHEMA&gt;&apos;, &apos;NULL&apos;, 0);
+    END CASE;
+
+    BEGIN INDEPENDENT TRANSACTION
+        -- create the procedure resource
+        --
+        CALL /shared/ASAssets/Utilities/repository/createResource(
+            INCR_CACHE_FOLDER,
+            &apos;incrementalRefresh&apos;,
+            ResourceDefs.RESOURCE_TYPE_PROCEDURE,
+            ResourceDefs.RESOURCE_SUBTYPE_SQL_SCRIPT_PROCEDURE,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to create procedure &quot;&apos; || INCR_CACHE_FOLDER || &apos;/incrementalRefresh&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    
+        -- update the new procedure with the procedure code
+        --
+        CALL /shared/ASAssets/Utilities/repository/updateSqlScript(
+            INCR_CACHE_FOLDER || &apos;/incrementalRefresh&apos;,
+            procText,
+            callStatus,
+            callResponse,
+            callFault
+        ); 
+        IF (callStatus &lt;&gt; 1) THEN
+            RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update procedure text for &quot;&apos; || INCR_CACHE_FOLDER || &apos;/incrementalRefresh&quot;: &apos; || CAST(callFault AS System.Text);
+        END IF;
+    END; -- independent transaction
+
+/*
+** perform addtional configuration required for partitioning
+*/
+
+    IF (configurePartitioning) THEN
+
+        -- create the union view code. this is done absolutely last just in case anything above craps out.
+        --
+        CALL PRINT (PROC_NAME || &apos;: updating the original view code, &quot;&apos; || unionViewPath || &apos;&quot;, with unioned view code.&apos;);
+
+        SET viewText = ProcedureTemplates.PART_UNION_VIEW_TEMPLATE;
+
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PROC&gt;&apos;, (Constants.CONFIG_FOLDER || &apos;/&apos; || PROC_NAME), 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_USERID&gt;&apos;, (currentDomain || &apos;/&apos; || currentUser), 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_CURRENT_TIMESTAMP&gt;&apos;, CURRENT_TIMESTAMP, 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ORIG_VIEW_PATH&gt;&apos;, origViewPath, 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_CACHED_VIEW_PATH&gt;&apos;, cachedViewPath, 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_LIVE_VIEW_PATH&gt;&apos;, liveViewPath, 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_ACTIVITY_DATE_COLUMN&gt;&apos;, inActivityDateCol, 0);
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_PARTITION_DATE&gt;&apos;, partDate, 0);
+
+        SET columnListSub = &apos;&apos;;
+        SET i = 0;
+        WHILE (i &lt; CARDINALITY(columnList)) DO
+            SET i = i + 1;
+    
+            SET columnListSub = columnListSub || &apos;    &quot;&apos; || columnList[i].colName || &apos;&quot;&apos;;
+            IF (i &lt;&gt; CARDINALITY(columnList)) THEN SET columnListSub = columnListSub || &apos;,&apos;; END IF;
+            SET columnListSub = columnListSub || NL;
+        END WHILE;
+    
+        SET viewText = RegexReplace (viewText, &apos;&lt;DEF_SELECT_ALL_COLS&gt;&apos;, columnListSub, 0);
+
+        BEGIN INDEPENDENT TRANSACTION
+            -- update code of original view with union (rather than move and recreate because dependents will follow move.)
+            -- earlier in the code, the original view was copied to ORIG_VIEW_PATH
+            -- 
+            CALL /shared/ASAssets/Utilities/repository/updateSqlTable(
+                unionViewPath,
+                viewText,
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+            IF (callStatus &lt;&gt; 1) THEN
+                RAISE Constants.IncrementalCacheConfigException VALUE &apos;Unable to update view text for &quot;&apos; || unionViewPath || &apos;&quot;: &apos; || CAST(callFault AS System.Text);
+            END IF;
+    
+    
+            -- disable/unconfigure(?) caching on original view
+            --
+            CALL PRINT (PROC_NAME || &apos;: disabling cache on union view, &quot;&apos; || unionViewPath || &apos;&quot;.&apos;);
+            CALL /shared/ASAssets/Utilities/repository/updateResourceCacheEnabled(
+                unionViewPath,
+                ResourceDefs.RESOURCE_TYPE_TABLE,
+                &apos;false&apos;,
+                callStatus,
+                callResponse,
+                callFault
+            );
+        END; -- independent transaction
+    END IF; -- configurePartitioning
+
+    -- if the incremental cache type is not &quot;none&quot;, update the cache configuration settings on the cached view.
+    --
+    IF (incrType &lt;&gt; Constants.INCR_TYPE_NONE) THEN
+        IF (configurePartitioning) THEN
+            CALL PRINT (PROC_NAME || &apos;: configuring incremental cache on cached partition view, &quot;&apos; || cachedViewPath || &apos;&quot; using configuration from original view.&apos;);
+        ELSE
+            CALL PRINT (PROC_NAME || &apos;: configuring incremental cache on cached view, &quot;&apos; || cachedViewPath || &apos;&quot;.&apos;);
+        END IF;
+    
+        BEGIN INDEPENDENT TRANSACTION
+            CALL /shared/ASAssets/Utilities/repository/updateResourceCacheConfiguration(
+                cachedViewPath,
+                ResourceDefs.RESOURCE_TYPE_TABLE,
+                1, 
+                1, 
+                &apos;DATA_SOURCE&apos;, 
+                origCacheConfig.storageDataSourcePath, 
+                VECTOR [(
+                    origCacheConfig.storageTargetName, 
+                    origCacheConfig.storagePath,
+                    origCacheConfig.storageType
+                )], 
+                origCacheConfig.refreshMode,
+                origCacheConfig.scheduleMode,
+                origCacheConfig.startTime,
+                origCacheConfig.period,
+                origCacheConfig.&quot;count&quot;,
+                origCacheConfig.expirationPeriod,
+                origCacheConfig.clearRule,
+                1,    -- incremental
+                NULL, -- storage bucket mode (not supported with incremental caching)
+                NULL, -- storage bucket catalog (not supported with incremental caching)
+                NULL, -- storage bucket schema (not supported with incremental caching)
+                NULL, -- storage bucket prefix (not supported with incremental caching)
+                NULL, -- storage bucket number of buckets (not supported with incremental caching)
+                origCacheConfig.storageDropCreateIdx, 
+                INCR_CACHE_FOLDER || &apos;/fullCacheRefresh&apos;, 
+                INCR_CACHE_FOLDER || &apos;/incrementalRefresh&apos;, 
+                callStatus,
+                callResponse,
+                callFault
+            ); 
+        END; -- independent transaction
+    END IF;
+
+    -- refresh cache on cached part view / notify user to refresh cache on cached part view
+    --
+    CALL PRINT(&apos;Configuration complete.&apos;);
+
+    SET resultCode = 0;
+    SET resultMessage = &apos;Configuration successful.&apos;;
+
+    LEAVE proc;
+
+EXCEPTION
+    ELSE
+        CALL PRINT(PROC_NAME || &apos;: Error while configuring incremental cache: &apos; || CURRENT_EXCEPTION.NAME || &apos;: &apos; || CURRENT_EXCEPTION.MESSAGE);
+        CALL PRINT(&apos;Trace: &apos; || NL || CURRENT_EXCEPTION.TRACE);
+        SET resultCode = -1;
+        SET resultMessage = &apos;Configuration failed: &apos; || CURRENT_EXCEPTION.MESSAGE;
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1400002594793</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="p:2:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="p:7:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="p:8:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">14/597</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">26/124</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">152/792</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">22/157</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">26/121</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/599</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">22/156</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">32/88</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/618</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1070</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/1313</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/1304</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/866</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/488</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">95/811</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/214</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/156</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>GetProperty</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/157</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>GetProperty</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">63/1271</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/352</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/496</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">74/1215</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/492</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/914</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">146/664</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/792</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">40/109</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">91/616</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">40/107</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">89/314</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/713</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">73/931</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/860</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/1334</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">38/106</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">78/921</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/920</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/602</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>checkInputsDelta</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/919</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/123</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">78/871</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">175/903</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/475</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/778</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">98/109</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/182</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/184</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/1198</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/600</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>checkInputsLastUpdated</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/245</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/347</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/240</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/246</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/664</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">33/543</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">24/1269</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/511</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">145/736</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/281</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/319</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1221</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/588</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>serializeColumnDefList</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/248</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/393</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1224</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">166/890</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">36/130</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/1369</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/253</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">78/810</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/903</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1379</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">32/108</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/290</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/750</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/864</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1161</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1378</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/145</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/306</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/453</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/307</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/553</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">27/122</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/235</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/601</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/234</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">47/131</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1159</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/1058</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/220</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/227</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/421</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/693</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/425</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/1202</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/696</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/222</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/232</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/233</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/271</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/370</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">143/778</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/432</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/320</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceExists</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">177/1255</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1242</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/577</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/736</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1267</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/758</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/566</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">168/1242</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">161/841</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">49/154</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">66/141</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/558</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">35/153</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/801</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">39/110</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/322</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/1061</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/1062</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/219</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/360</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/212</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">29/151</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/1208</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/1207</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/1324</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/514</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">31/152</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/869</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/771</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/772</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/621</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/715</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/636</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>CreateTableAs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/92</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/526</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/870</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/691</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>CopyResource</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1011</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/1054</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/841</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">64/137</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">36/294</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/807</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">170/854</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">33/280</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/308</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/309</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1172</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1171</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1255</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">173/1191</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/835</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1236</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/834</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1235</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/689</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1007</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/1009</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/854</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/648</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/916</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/1050</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">30/144</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1023</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/1024</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">14/261</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/654</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/85</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">149/676</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/314</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/519</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">78/1063</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">166/1030</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/883</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/884</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">67/716</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1043</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">164/1178</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/1010</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>updateCollectIncrementLastUpdated</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/1012</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>updateCollectIncrementDelta</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/729</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1191</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/189</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">153/1304</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/730</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/301</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">22/622</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1178</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">30/119</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">30/118</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/501</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/300</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/910</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/208</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">97/110</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">59/1204</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1030</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">28/757</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/628</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">175/1043</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/1310</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/625</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/1328</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/676</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/604</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/395</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/755</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">17/482</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">25/120</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">184/553</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/333</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">10/430</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">13/343</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/1326</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Print</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/890</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/805</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>ProcedureTemplates</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">26/90</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/544</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">78/1209</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">15/186</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">95/240</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/1014</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">154/750</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">19/327</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

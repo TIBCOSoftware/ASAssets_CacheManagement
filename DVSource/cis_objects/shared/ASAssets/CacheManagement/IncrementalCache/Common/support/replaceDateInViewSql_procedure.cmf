@@ -1,0 +1,218 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="replaceDateInViewSql" path="/shared/ASAssets/CacheManagement/IncrementalCache/Common/support/replaceDateInViewSql" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>replaceDateInViewSql:
+
+    Searches for a date pattern in a view&apos;s SQL text and replaces any dates with the input date.
+
+     
+    Inputs:
+        resourcesPath - The path to the CIS view to update.
+     
+        newDate - The new date to replace any found dates with.
+     
+
+    Outputs:
+        resultStatus - The result of the update. 1 = success, 0 = failure.
+
+        resultMsg - A message about the result of the update. NULL if the update was successful.
+
+     
+    Exceptions:
+      N/A
+
+     
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="resourcePath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="newDate" direction="IN" nullable="true">
+      <datatype name="DATE" type="DATE"/>
+    </parameter>
+    <parameter name="resultStatus" direction="OUT" nullable="true">
+      <datatype name="BIT" type="INTEGER" minValue="0" maxValue="1"/>
+    </parameter>
+    <parameter name="resultMsg" direction="OUT" nullable="true">
+      <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+        <schemaDatatype>
+          <datatype name="XML" type="TREE" refId="1"></datatype>
+        </schemaDatatype>
+      </datatype>
+      <attribute name="Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/util/System" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/getScriptText" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="resourceType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSubType" direction="IN">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="scriptText" direction="OUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/repository/updateSqlTable" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="fullResourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/shared/ASAssets/Utilities/TypeDefinitions" referenceType="pathType" type="STRING" maxLength="1000"/>
+      </element>
+      <element name="inScripttext" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="createResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+      <element name="faultResponse" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <reference refId="2"/>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/Utilities/string/TextUtils/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="Input Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Regular Expression" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Replacement Text" direction="IN">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+      <element name="Occurrence" direction="IN">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="result" direction="OUT">
+        <datatype type="STRING" maxLength="2147483647"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/system/customfunctions/RegexReplace" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    replaceDateInViewSql:
+
+    Searches for a date pattern in a view&apos;s SQL text and replaces any dates with the input date.
+
+     
+    Inputs:
+        resourcesPath - The path to the CIS view to update.
+     
+        newDate - The new date to replace any found dates with.
+     
+
+    Outputs:
+        resultStatus - The result of the update. 1 = success, 0 = failure.
+
+        resultMsg - A message about the result of the update. NULL if the update was successful.
+
+     
+    Exceptions:
+      N/A
+
+     
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE replaceDateInViewSql(
+    IN resourcePath /lib/resource/ResourceDefs.ResourcePath,
+    IN newDate DATE,
+    OUT resultStatus BIT,
+    OUT resultMsg XML
+)
+BEGIN
+    DECLARE regexPattern VARCHAR(40) DEFAULT &apos;&apos;&apos;\d{4}-\d{2}-\d{2}&apos;&apos;&apos;; -- matches &apos;yyyy-mm-dd&apos; ANSI timestamp format (including leading and trailing single quotes)
+    DECLARE oldSqlText System.Text;
+    DECLARE newSqlText System.Text;
+    DECLARE isSuccess	BIT;
+    DECLARE createResponse XML;
+    DECLARE faultResponse	XML;
+      
+    CALL /shared/ASAssets/Utilities/repository/getScriptText(
+        resourcePath, 
+        /lib/resource/ResourceDefs.RESOURCE_TYPE_TABLE, 
+        /lib/resource/ResourceDefs.RESOURCE_SUBTYPE_SQL_TABLE, 
+        oldSqlText
+    );
+
+--	CALL PRINT (&apos;oldSqlText = &apos; || oldSqlText);
+    SET newSqlText = RegexReplace (
+                         oldSqlText,
+                         regexPattern,
+                         &apos;&apos;&apos;&apos; || newDate || &apos;&apos;&apos;&apos;,
+                         0
+  				     );
+
+-- 	CALL PRINT(&apos;newSqlText = &apos; || newSqlText);
+    CALL /shared/ASAssets/Utilities/repository/updateSqlTable(
+              resourcePath, 
+              newSqlText,
+              isSuccess,
+              createResponse,
+              faultResponse
+    ); 
+    SET resultStatus = isSuccess;
+    SET resultMsg    = faultResponse;
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1399935551024</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="p:3:Customized" type="STRING">datatype.changed;datatype.changed;datatype.changed;datatype.changed;datatype.changed</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">24/36</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">24/37</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>util</item>
+        <item>System</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

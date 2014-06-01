@@ -1,0 +1,184 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="updatePartitionDate" path="/shared/ASAssets/CacheManagement/IncrementalCache/Common/updatePartitionDate" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>updatePartitionDate:
+
+    Updates the partition date on a partition cached view set.
+
+
+    Inputs:
+        newDate - The new partition date.
+
+        cachedPartitionPath - The path to the cached partition view.
+    
+        uncachedPartitionPath - The path to the live partition view.
+
+        unionViewPath - The path to the view that unions both partitions together.
+
+
+    Outputs:
+        resultStatus - The result of the update. 1 = success, 0 = failure.
+
+        resultMsg - A message about the result of the update. NULL if the update was successful.
+    
+
+    Exceptions:
+        System.IllegalArgumentException - If a non-positive value is passed for &apos;inYearsAgo&apos;.
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="newDate" direction="IN" nullable="true">
+      <datatype name="TIMESTAMP" type="DATETIME"/>
+    </parameter>
+    <parameter name="cachedPartitionPath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="uncachedPartitionPath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="unionedViewPath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="resultStatus" direction="OUT" nullable="true">
+      <datatype name="BIT" type="INTEGER" minValue="0" maxValue="1"/>
+    </parameter>
+    <parameter name="resultMsg" direction="OUT" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="65536"/>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Common/support/replaceDateInViewSql" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="resourcePath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="newDate" direction="IN">
+        <datatype type="DATE"/>
+      </element>
+      <element name="resultStatus" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+      <element name="resultMsg" direction="OUT">
+        <datatype name="XML" referenceType="XML" type="XML" contentConstraint="SEQUENCE" schemaConstraint="ANY" componentType="TYPE" componentName="XML">
+          <schemaDatatype>
+            <datatype name="XML" type="TREE" refId="2"></datatype>
+          </schemaDatatype>
+        </datatype>
+      </element>
+    </datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    updatePartitionDate:
+
+    Updates the partition date on a partition cached view set.
+
+
+    Inputs:
+        newDate - The new partition date.
+
+        cachedPartitionPath - The path to the cached partition view.
+    
+        uncachedPartitionPath - The path to the live partition view.
+
+        unionViewPath - The path to the view that unions both partitions together.
+
+
+    Outputs:
+        resultStatus - The result of the update. 1 = success, 0 = failure.
+
+        resultMsg - A message about the result of the update. NULL if the update was successful.
+    
+
+    Exceptions:
+        System.IllegalArgumentException - If a non-positive value is passed for &apos;inYearsAgo&apos;.
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    09/07/2010		Calvin Goodrich		5.1.0			Created new
+
+    © 2010, 2014 Cisco and/or its affiliates. All rights reserved.
+ */
+PROCEDURE updatePartitionDate(
+		IN newDate TIMESTAMP,
+		IN cachedPartitionPath /lib/resource/ResourceDefs.ResourcePath,
+		IN uncachedPartitionPath /lib/resource/ResourceDefs.ResourcePath,
+        IN unionedViewPath /lib/resource/ResourceDefs.ResourcePath,
+		OUT resultStatus BIT,
+		OUT resultMsg VARCHAR(65536) 
+)
+BEGIN	
+    DECLARE resultStatus1 BIT;
+    DECLARE resultStatus2 BIT;
+    DECLARE resultStatus3 BIT;
+    DECLARE resultMsg1 XML;
+    DECLARE resultMsg2 XML;
+    DECLARE resultMsg3 XML;
+    SET resultMsg = &apos;&apos;;	-- resultMsg is never null. Its remains an empty string if there are no errors 
+
+    CALL /shared/ASAssets/CacheManagement/IncrementalCache/Common/support/replaceDateInViewSql(
+        cachedPartitionPath,
+        CAST(newDate AS DATE),
+        resultStatus1,
+        resultMsg1
+    );   
+  
+  	CALL /shared/ASAssets/CacheManagement/IncrementalCache/Common/support/replaceDateInViewSql(
+        uncachedPartitionPath,
+        CAST(newDate AS DATE),
+        resultStatus2,
+        resultMsg2
+    );    
+  	 
+  	CALL /shared/ASAssets/CacheManagement/IncrementalCache/Common/support/replaceDateInViewSql(
+        unionedViewPath,
+        CAST(newDate AS DATE),
+        resultStatus3,
+        resultMsg3
+    );    
+  	 
+    IF resultStatus1 &lt;&gt; 1 OR resultStatus2 &lt;&gt; 1 OR resultStatus3 &lt;&gt; 1
+    THEN SET resultStatus = 0;
+    ELSE SET resultStatus = 1;
+    END IF;
+    
+    IF resultMsg1 IS NOT NULL
+    THEN SET resultMsg = resultMsg || CAST(resultMsg1 AS VARCHAR(65536));
+    END IF;
+    
+    IF resultMsg2 IS NOT NULL
+    THEN SET resultMsg = resultMsg || CAST(resultMsg2 AS VARCHAR(65536));
+    END IF;
+               
+    IF resultMsg3 IS NOT NULL
+    THEN SET resultMsg = resultMsg || CAST(resultMsg3 AS VARCHAR(65536));
+    END IF;
+               
+    --CALL print(&apos;resultStatus1 = &apos; || CAST(resultStatus1 AS VARCHAR(1)));
+    --CALL print(&apos;resultStatus2 = &apos; || CAST(resultStatus2 AS VARCHAR(1)));	 
+    --CALL print(&apos;resultStatus = &apos; || CAST(resultStatus AS VARCHAR(1)));
+    --CALL print(&apos;resultMsg1 = &apos; || COALESCE(CAST(resultMsg1 AS VARCHAR(1000)),&apos;NULL&apos;));
+    --CALL print(&apos;resultMsg2 = &apos; || COALESCE(CAST(resultMsg2 AS VARCHAR(1000)),&apos;NULL&apos;));	 
+    --CALL print(&apos;resultMsg = &apos; || COALESCE(CAST(resultMsg AS VARCHAR(2000)),&apos;NULL&apos;));
+  
+END</attribute>
+  <attribute name="creationDate" type="LONG">0</attribute>
+  <attribute name="creatorUserDomain" type="STRING"/>
+  <attribute name="creatorUserName" type="STRING"/>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1399935754824</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="references" type="NULL"/>
+</metadata>

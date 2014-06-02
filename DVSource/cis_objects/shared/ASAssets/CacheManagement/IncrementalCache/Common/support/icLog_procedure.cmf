@@ -1,0 +1,148 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="icLog" path="/shared/ASAssets/CacheManagement/IncrementalCache/Common/support/icLog" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>icLog:
+
+	This procedure is used for logging debug, informational, and error messages to the
+    $CIS_HOME/cs_server.log file. There is no built-in facility for logging debug messages
+    so informational and debug messages will appear as INFO messages in the server log.
+    Error messages will appear as ERROR messages. The constant DEBUG_LEVEL found in
+    &lt;cache tools home&gt;/Configuration/Constants maintains the global debug setting and
+    can be set to different debug levels (set to DEBUG_LEVEL_INFO by default.)
+
+    This procedure can also be edited to support other types of logging facilities (flat file,
+    database table, etc.)
+
+
+	Input:
+		debugLevel - Indicates the severity of the input message.  
+			Values: See &lt;cache tools home&gt;/Configuration/Constants.DEBUG_LEVEL_* for valid values.
+
+		message -    The message to write to the log.  
+			Values: Any text string.
+
+
+	Output:
+		N/A
+
+
+	Exceptions:  none
+
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    03/06/2013		Calvin Goodrich		6.2.1			Created new
+
+    © 2013, 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="debugLevel" direction="IN" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="message" direction="IN" nullable="true">
+      <datatype name="LONGVARCHAR" type="STRING" maxLength="2147483647"/>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/debug/Log" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="textToLog" direction="IN">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="MessageValue" type="STRING" maxLength="64000"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/lib/debug/LogError" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="textToLog" direction="IN">
+        <datatype referenceDefinitionSet="/lib/util/System" referenceType="MessageValue" type="STRING" maxLength="64000"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/* 
+    icLog:
+
+	This procedure is used for logging debug, informational, and error messages to the
+    $CIS_HOME/cs_server.log file. There is no built-in facility for logging debug messages
+    so informational and debug messages will appear as INFO messages in the server log.
+    Error messages will appear as ERROR messages. The constant DEBUG_LEVEL found in
+    &lt;cache tools home&gt;/Configuration/Constants maintains the global debug setting and
+    can be set to different debug levels (set to DEBUG_LEVEL_INFO by default.)
+
+    This procedure can also be edited to support other types of logging facilities (flat file,
+    database table, etc.)
+
+
+	Input:
+		debugLevel - Indicates the severity of the input message.  
+			Values: See &lt;cache tools home&gt;/Configuration/Constants.DEBUG_LEVEL_* for valid values.
+
+		message -    The message to write to the log.  
+			Values: Any text string.
+
+
+	Output:
+		N/A
+
+
+	Exceptions:  none
+
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    03/06/2013		Calvin Goodrich		6.2.1			Created new
+
+    © 2013, 2014 Cisco and/or its affiliates. All rights reserved.
+*/
+PROCEDURE icLog(
+    IN debugLevel INTEGER,
+    IN message LONGVARCHAR
+)
+BEGIN
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration;
+
+    -- if the input debug level value is lower (higher in priority) than the global debug level
+    -- setting then output the log message. Error messages are written as ERROR messages in the
+    -- log; all others are written out as INFO messages.
+    --
+    IF (debugLevel &lt;= /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants.DEBUG_LEVEL) THEN
+        IF (debugLevel = /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants.DEBUG_LEVEL_ERROR) THEN
+            CALL LogError (message);
+        ELSE
+            CALL Log (message);
+        END IF;
+    END IF;
+END</attribute>
+  <attribute name="creationDate" type="LONG">1359047456182</attribute>
+  <attribute name="creatorUserDomain" type="STRING">composite</attribute>
+  <attribute name="creatorUserName" type="STRING">admin</attribute>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1399934351674</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">18/48</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>LogError</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">18/50</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>debug</item>
+        <item>Log</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

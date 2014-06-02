@@ -1,0 +1,73 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="pq_MSSQL_DropTable" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/pq_MSSQL_DropTable" type="PROCEDURE" subtype="EXTERNAL_SQL_PROCEDURE" changeToken="0">
+  <annotation>pq_MSSQL_DropTable:
+
+    Packaged query to drop a table in a Microsoft SQL Server data source. 
+
+
+    Inputs:
+        inCatalogName - The catalog in which to find the table. NULL if the cache DS doesn&apos;t support catalogs.
+
+        inSchemaName - The schema in which to find the table. NULL if the cache DS doesn&apos;t support schemas.
+    
+        inTableName - The name of the table to drop.
+
+
+    Outputs:
+        result - A result cursor. The MYRESULT column will have the result value: 1 = success, thrown exception = failure.
+    
+
+    Exceptions:
+        N/A.
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    04/14/2014		Calvin Goodrich		6.2.6			Created new
+
+    © 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="result" direction="OUT" nullable="true">
+      <datatype type="TABLE" refId="1">
+        <element name="MYRESULT">
+          <datatype name="DECIMAL" extendedName="NUMBER(38,0)" subType="DATASOURCE_TYPE" type="DECIMAL" maxDigits="38" maxFractionalDigits="0"/>
+        </element>
+      </datatype>
+      <attribute name="Customized" type="STRING">metadata.added;datatype.changed</attribute>
+    </parameter>
+    <parameter name="catalog_name" direction="IN" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="255"/>
+      <attribute name="Customized" type="STRING">metadata.added</attribute>
+    </parameter>
+    <parameter name="schema_name" direction="IN" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="255"/>
+      <attribute name="Customized" type="STRING">metadata.added;datatype.changed;direction.changed;name.changed</attribute>
+    </parameter>
+    <parameter name="table_name" direction="IN" nullable="true">
+      <datatype name="VARCHAR" type="STRING" maxLength="255"/>
+      <attribute name="Customized" type="STRING">metadata.added;datatype.changed;direction.changed</attribute>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MSSQL_cache" type="DATA_SOURCE">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <attribute name="SQL" type="STRING">&lt;version 2&gt; multipartseparator=;+;
+DROP TABLE [{0}].[{1}].[{2}]; ;
+select 1 </attribute>
+  <attribute name="creationDate" type="LONG">1397505072243</attribute>
+  <attribute name="creatorUserDomain" type="STRING">composite</attribute>
+  <attribute name="creatorUserName" type="STRING">nobody</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="isSingleSelect" type="STRING">false</attribute>
+  <attribute name="lastModifiedDate" type="LONG">1399939584058</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="p:0:Customized" type="STRING">metadata.added;datatype.changed</attribute>
+  <attribute name="p:1:Customized" type="STRING">metadata.added</attribute>
+  <attribute name="p:2:Customized" type="STRING">metadata.added;datatype.changed;direction.changed;name.changed</attribute>
+  <attribute name="p:3:Customized" type="STRING">metadata.added;datatype.changed;direction.changed</attribute>
+  <attribute name="passThroughSource" type="STRING">/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MSSQL_cache</attribute>
+</metadata>

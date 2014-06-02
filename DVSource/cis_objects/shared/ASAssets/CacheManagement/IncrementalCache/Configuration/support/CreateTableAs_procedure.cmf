@@ -1,0 +1,333 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="CreateTableAs" path="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/CreateTableAs" type="PROCEDURE" subtype="SQL_SCRIPT_PROCEDURE" changeToken="0">
+  <annotation>CreateTableAs:
+
+    Generic create table script that calls the appropriate create table script based on input
+    data source type.
+
+
+    Inputs:
+        inCatalogName - The catalog to create the table under. NULL if the cache DS doesn&apos;t support catalogs.
+
+        inSchemaName - The schema to create the table under. NULL if the cache DS doesn&apos;t support schemas.
+    
+        inTableName - The name of the table to create.
+
+        inSrcTableName - The name of the source table to create the new table from.
+
+        inDSType - An integer indicating the data source type (See /shared/ASAssets/CacheManagement/IncrementalCaching/Configuration/Constants.)
+
+        inDSPath - The path to the data source in which to create the table.
+
+
+    Outputs:
+        status - The result of the create. 1 = success, 0 = failure.
+    
+
+    Exceptions:
+        N/A.
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    04/14/2014		Calvin Goodrich		6.2.6			Created new
+
+    © 2014 Cisco and/or its affiliates. All rights reserved.</annotation>
+  <parameters>
+    <parameter name="inCatalogName" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="inSchemaName" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="inTableName" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="inSrcTableName" direction="IN" nullable="true">
+      <datatype name="ResourceName" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+    </parameter>
+    <parameter name="inDSType" direction="IN" nullable="true">
+      <datatype name="INTEGER" type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+    </parameter>
+    <parameter name="inDSPath" direction="IN" nullable="true">
+      <datatype name="ResourcePath" referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+    </parameter>
+    <parameter name="success" direction="OUT" nullable="true">
+      <datatype name="BIT" type="INTEGER" minValue="0" maxValue="1"/>
+    </parameter>
+  </parameters>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/lib/resource" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/lib/resource/ResourceDefs" type="DEFINITION_SET">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/Constants" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support" type="CONTAINER">
+    <datatype name="Tree" type="TREE" refId="1"></datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/MSSQL_CreateTableAs" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inCatalogName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSchemaName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSrcTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inDSPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/MySQL_CreateTableAs" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSrcTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inDSPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support/Oracle_CreateTableAs" type="PROCEDURE">
+    <datatype type="PROCEDURE" refId="1">
+      <element name="inSchemaName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inSrcTableName" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourceName" type="STRING" maxLength="255"/>
+      </element>
+      <element name="inDSPath" direction="IN">
+        <datatype referenceDefinitionSet="/lib/resource/ResourceDefs" referenceType="ResourcePath" type="STRING" maxLength="4096"/>
+      </element>
+      <element name="success" direction="OUT">
+        <datatype type="INTEGER" minValue="0" maxValue="1"/>
+      </element>
+    </datatype>
+  </dependency>
+  <attribute name="Script" type="STRING">/*
+    CreateTableAs:
+
+    Generic create table script that calls the appropriate create table script based on input
+    data source type.
+
+
+    Inputs:
+        inCatalogName - The catalog to create the table under. NULL if the cache DS doesn&apos;t support catalogs.
+
+        inSchemaName - The schema to create the table under. NULL if the cache DS doesn&apos;t support schemas.
+    
+        inTableName - The name of the table to create.
+
+        inSrcTableName - The name of the source table to create the new table from.
+
+        inDSType - An integer indicating the data source type (See /shared/ASAssets/CacheManagement/IncrementalCaching/Configuration/Constants.)
+
+        inDSPath - The path to the data source in which to create the table.
+
+
+    Outputs:
+        status - The result of the create. 1 = success, 0 = failure.
+    
+
+    Exceptions:
+        N/A.
+    
+
+    Modified Date:	Modified By:		CSW Version:	Reason:
+    04/14/2014		Calvin Goodrich		6.2.6			Created new
+
+    © 2014 Cisco and/or its affiliates. All rights reserved.
+ */
+PROCEDURE CreateTableAs(
+    IN inCatalogName ResourceDefs.ResourceName,
+    IN inSchemaName ResourceDefs.ResourceName,
+    IN inTableName ResourceDefs.ResourceName,
+    IN inSrcTableName ResourceDefs.ResourceName,
+    IN inDSType INTEGER,
+    IN inDSPath ResourceDefs.ResourcePath,
+    OUT success BIT
+)
+BEGIN
+    PATH /lib/resource;
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration;
+    PATH /shared/ASAssets/CacheManagement/IncrementalCache/Configuration/support;
+
+    CASE inDSType
+		WHEN Constants.DATABASE_TYPE_ORACLE THEN
+			CALL Oracle_CreateTableAs (
+                inSchemaName,
+                inTableName,
+                inSrcTableName,
+                inDSPath,
+                success
+            );
+
+		WHEN Constants.DATABASE_TYPE_MYSQL THEN
+			CALL MySQL_CreateTableAs (
+                inTableName,
+                inSrcTableName,
+                inDSPath,
+                success
+            );
+
+		WHEN Constants.DATABASE_TYPE_MSSQL THEN
+			CALL MSSQL_CreateTableAs (
+                inCatalogName,
+                inSchemaName,
+                inTableName,
+                inSrcTableName,
+                inDSPath,
+                success
+            );
+
+	END CASE;
+END</attribute>
+  <attribute name="creationDate" type="LONG">1397505604246</attribute>
+  <attribute name="creatorUserDomain" type="STRING">composite</attribute>
+  <attribute name="creatorUserName" type="STRING">admin</attribute>
+  <attribute name="explicitly.designed" type="BOOLEAN">false</attribute>
+  <attribute name="impactLevel" type="INTEGER">0</attribute>
+  <attribute name="impactMessage" type="NULL"/>
+  <attribute name="lastModifiedDate" type="LONG">1399937847721</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="model" type="NULL"/>
+  <attribute name="native_only" type="STRING">false</attribute>
+  <attribute name="references" type="MAP">
+    <item>
+      <key type="STRING">17/41</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">8/50</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/51</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>Oracle_CreateTableAs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">21/37</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">22/36</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">20/38</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/60</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>MySQL_CreateTableAs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">23/39</key>
+      <value type="STRING_ARRAY">
+        <item>lib</item>
+        <item>resource</item>
+        <item>ResourceDefs</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">8/67</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">8/59</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>Constants</item>
+      </value>
+    </item>
+    <item>
+      <key type="STRING">9/68</key>
+      <value type="STRING_ARRAY">
+        <item>shared</item>
+        <item>ASAssets</item>
+        <item>CacheManagement</item>
+        <item>IncrementalCache</item>
+        <item>Configuration</item>
+        <item>support</item>
+        <item>MSSQL_CreateTableAs</item>
+      </value>
+    </item>
+  </attribute>
+</metadata>

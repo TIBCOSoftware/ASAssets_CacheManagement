@@ -1,0 +1,142 @@
+<?xml version="1.1" encoding="UTF-8"?>
+<metadata name="MySQL_cache" path="/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MySQL_cache" type="DATA_SOURCE" subtype="RELATIONAL" changeToken="0">
+  <annotation/>
+  <security>
+    <owner user="admin" domain="composite"/>
+  </security>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MySQL_cache/cache_status" type="TABLE">
+    <datatype type="TABLE" refId="1">
+      <element name="clusterid">
+        <datatype type="STRING" maxLength="40"/>
+      </element>
+      <element name="serverid" nullable="false">
+        <datatype type="STRING" maxLength="80"/>
+      </element>
+      <element name="resourceid" nullable="false">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="parameters">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="status" nullable="false">
+        <datatype type="STRING" maxLength="1"/>
+      </element>
+      <element name="cachekey" nullable="false">
+        <datatype type="INTEGER" minValue="-2147483648" maxValue="2147483647"/>
+      </element>
+      <element name="starttime" nullable="false">
+        <datatype type="DATETIME"/>
+      </element>
+      <element name="finishtime">
+        <datatype type="DATETIME"/>
+      </element>
+      <element name="cleartime">
+        <datatype type="DATETIME"/>
+      </element>
+      <element name="bytes">
+        <datatype type="INTEGER"/>
+      </element>
+      <element name="message">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="bucket">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="incrementalstatus">
+        <datatype type="STRING" maxLength="1"/>
+      </element>
+      <element name="incrementalmaintenancelevel">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+    </datatype>
+  </dependency>
+  <dependency target="/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MySQL_cache/cache_tracking" type="TABLE">
+    <datatype type="TABLE" refId="1">
+      <element name="clusterid">
+        <datatype type="STRING" maxLength="40"/>
+      </element>
+      <element name="serverid" nullable="false">
+        <datatype type="STRING" maxLength="80"/>
+      </element>
+      <element name="resourceid" nullable="false">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="catalog">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="schema">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="table" nullable="false">
+        <datatype type="STRING" maxLength="255"/>
+      </element>
+      <element name="createtime">
+        <datatype type="DATETIME"/>
+      </element>
+    </datatype>
+  </dependency>
+  <attribute name="cacheStatusTable" type="STRING">/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MySQL_cache/cache_status</attribute>
+  <attribute name="cacheTrackingTable" type="STRING">/shared/ASAssets/CacheManagement/IncrementalCache/TmpDS/MySQL_cache/cache_tracking</attribute>
+  <attribute name="commitOnFetchDone" type="BOOLEAN">true</attribute>
+  <attribute name="connCheckOutProcedure" type="STRING"/>
+  <attribute name="connPoolMaxSize" type="INTEGER">100</attribute>
+  <attribute name="connPoolMinSize" type="INTEGER">0</attribute>
+  <attribute name="connPoolTimeout" type="INTEGER">30</attribute>
+  <attribute name="connProperties" type="MAP">
+    <item>
+      <key type="STRING">characterEncoding</key>
+      <value type="STRING">UTF8</value>
+    </item>
+    <item>
+      <key type="STRING">clobberStreamingResults</key>
+      <value type="STRING">true</value>
+    </item>
+    <item>
+      <key type="STRING">connectTimeout</key>
+      <value type="STRING">60000</value>
+    </item>
+    <item>
+      <key type="STRING">useReadAheadInput</key>
+      <value type="STRING">true</value>
+    </item>
+    <item>
+      <key type="STRING">useUnicode</key>
+      <value type="STRING">true</value>
+    </item>
+    <item>
+      <key type="STRING">zeroDateTimeBehavior</key>
+      <value type="STRING">convertToNull</value>
+    </item>
+  </attribute>
+  <attribute name="connStaleTimeout" type="INTEGER">60</attribute>
+  <attribute name="connValidateQuery" type="STRING"/>
+  <attribute name="connectorName" type="STRING"/>
+  <attribute name="creationDate" type="LONG">1397074372603</attribute>
+  <attribute name="creatorUserDomain" type="STRING">composite</attribute>
+  <attribute name="creatorUserName" type="STRING">admin</attribute>
+  <attribute name="driverName" type="STRING">MySQL 5.0</attribute>
+  <attribute name="execTimeout" type="INTEGER">0</attribute>
+  <attribute name="healthmonitortable" type="STRING"/>
+  <attribute name="isPassThrough" type="STRING">Disabled</attribute>
+  <attribute name="lastModifiedDate" type="LONG">1397495870437</attribute>
+  <attribute name="lastModifiedUserDomain" type="STRING">composite</attribute>
+  <attribute name="lastModifiedUserName" type="STRING">admin</attribute>
+  <attribute name="login" type="STRING">root</attribute>
+  <attribute name="maxNumberForOrSyntax" type="INTEGER">2147483647</attribute>
+  <attribute name="maxSourceSideCardinalityForSJ" type="STRING"/>
+  <attribute name="maximumContainerDepth" type="INTEGER">0</attribute>
+  <attribute name="minTargetToSourceRatioForSJ" type="STRING"/>
+  <attribute name="name" type="STRING">MySQL_cache</attribute>
+  <attribute name="password" type="STRING">F4DE0FDF1D26150935979BE2362A2576</attribute>
+  <attribute name="persistPassword" type="BOOLEAN">true</attribute>
+  <attribute name="streamingResults" type="BOOLEAN">true</attribute>
+  <attribute name="supportsStarSchema" type="BOOLEAN">false</attribute>
+  <attribute name="topicName" type="STRING"/>
+  <attribute name="txnIsolationLevel" type="STRING">Read Committed</attribute>
+  <attribute name="type" type="STRING">MySql</attribute>
+  <attribute name="url" type="STRING">jdbc:mysql://localhost:9408/cis_cache</attribute>
+  <attribute name="urlDatabaseName" type="STRING">cis_cache</attribute>
+  <attribute name="urlIP" type="STRING">localhost</attribute>
+  <attribute name="urlPatternStr" type="STRING">jdbc:mysql://&lt;HOST&gt;:&lt;PORT&gt;/&lt;DATABASE_NAME&gt;</attribute>
+  <attribute name="urlPort" type="INTEGER">9408</attribute>
+</metadata>

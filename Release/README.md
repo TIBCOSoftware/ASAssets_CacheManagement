@@ -1,5 +1,5 @@
 Release items (compiled jar files, car files, pdf documents) should be placed here
-====================
+=====================
 
 (c) 2017 TIBCO Software Inc. All rights reserved.
 

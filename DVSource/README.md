@@ -1,5 +1,5 @@
 Objects within the Data Virtualization Server (views, stored procedures, data sources, etc.) should be stored here.
-====================
+=====================
 
 (c) 2017 TIBCO Software Inc. All rights reserved.
 
